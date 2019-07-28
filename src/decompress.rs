@@ -4,8 +4,19 @@ use crate::constants::URI_KEY;
 use context::DecompressContext;
 use std::{
     collections::HashMap,
-    convert::TryFrom,
+    convert::{
+        TryFrom,
+        TryInto,
+    },
 };
+
+#[derive(Debug)]
+pub enum DecompressError {
+	InvalidFirstEntry,
+	Null,
+}
+
+
 
 pub fn decompress_uri(compressed: &[u32]) -> Option<String> {
     //let compressed = compressed.replace(" ", "+"); //Is this even necessary?
@@ -18,34 +29,34 @@ pub fn decompress_uri(compressed: &[u32]) -> Option<String> {
                 .map(|n| u32::try_from(n).unwrap())
         })
         .collect();
-    decompress(&compressed?, 6)
+    decompress(&compressed?, 6).ok()
 }
 
 pub fn decompress_str(compressed: &[u32]) -> Option<String> {
-    decompress(&compressed, 16)
+    decompress(&compressed, 16).ok()
 }
 
-pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Option<String> {
+pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, DecompressError> {
     let reset_val = 2_usize.pow(u32::try_from(bits_per_char).unwrap() - 1);
     if compressed.is_empty() {
-        return None;
+        return Err(DecompressError::Null);
     }
 
     let mut ctx = DecompressContext::new(compressed, reset_val);
     let mut dictionary: HashMap<u32, String> = HashMap::new();
     for i in 0_u8..3_u8 {
-        dictionary.insert(u32::from(i), (i as char).to_string());
+        dictionary.insert(u32::from(i), char::from(i).to_string());
     }
 
     let next = ctx.read_bits(2);
     let first_entry = match next {
         0 | 1 => {
             let bits_to_read = (next * 8) + 8;
-            let bits = ctx.read_bits(bits_to_read as usize);
+            let bits = ctx.read_bits(bits_to_read.try_into().unwrap());
             unsafe { std::char::from_u32_unchecked(bits) }
         }
-        2 => return Some(String::new()),
-        _v => return None,
+        2 => return Ok(String::new()),
+        _v => return Err(DecompressError::InvalidFirstEntry),
     };
     dictionary.insert(3, first_entry.to_string());
 
@@ -72,7 +83,7 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Option<String> {
                 enlarge_in -= 1;
             }
             2 => {
-                return Some(result);
+                return Ok(result);
             }
             _ => {}
         }
@@ -89,7 +100,8 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Option<String> {
                 entry = w.clone();
                 entry.push(w.chars().next().expect("next"));
             } else {
-                return None;
+				unimplemented!();
+               // return None;
             }
         }
 

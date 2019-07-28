@@ -1,0 +1,53 @@
+<html>
+	<head>
+		<title>Lz-String Browser Tests</title>
+		<script src = "lz-string-1.4.4.js"></script>
+	</head>
+	<body>
+		<script type="module">
+			import * as lz_string from './lz_string.js';
+			
+			function test(f, it){
+				let start = performance.now();
+				for(var  i = 0; i != it; i++){
+					f();
+				}
+				let end = performance.now();
+				return end - start;
+			}
+			
+			async function run(){
+				await lz_string.default();
+				//console.log(lz_string.compress("hey"));
+				window.LZString = lz_string;
+				let it = 1;
+				
+				let testData = "";
+				for(var i = 0; i != 100000; i++){
+					testData += Math.random();
+				}
+				
+				let rust = test(function(){
+					let data = lz_string.compress_uri(testData);
+					let dec = lz_string.decompress_uri(data);
+					if(dec != testData){
+						throw "Error";
+					}
+				}, it);
+				console.log(rust);
+				
+				let js = test(function(){
+					let data = LZString144.compressToEncodedURIComponent(testData);
+					let dec = LZString144.decompressFromEncodedURIComponent(data);
+					if(dec != testData){
+						throw "Error";
+					}
+				}, it);
+				
+				console.log(js);
+			}
+			
+			run();
+		</script>
+	</body>
+</html>

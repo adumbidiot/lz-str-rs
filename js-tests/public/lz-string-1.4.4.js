@@ -7,7 +7,7 @@
 // http://pieroxy.net/blog/pages/lz-string/testing.html
 //
 // LZ-based compression algorithm, version 1.4.4
-var LZString = (function() {
+var LZString144 = (function() {
 
 // private property
 var f = String.fromCharCode;
@@ -25,10 +25,10 @@ function getBaseValue(alphabet, character) {
   return baseReverseDic[alphabet][character];
 }
 
-var LZString = {
+var LZString144 = {
   compressToBase64 : function (input) {
     if (input == null) return "";
-    var res = LZString._compress(input, 6, function(a){return keyStrBase64.charAt(a);});
+    var res = LZString144._compress(input, 6, function(a){return keyStrBase64.charAt(a);});
     switch (res.length % 4) { // To produce valid Base64
     default: // When could this happen ?
     case 0 : return res;
@@ -41,23 +41,23 @@ var LZString = {
   decompressFromBase64 : function (input) {
     if (input == null) return "";
     if (input == "") return null;
-    return LZString._decompress(input.length, 32, function(index) { return getBaseValue(keyStrBase64, input.charAt(index)); });
+    return LZString144._decompress(input.length, 32, function(index) { return getBaseValue(keyStrBase64, input.charAt(index)); });
   },
 
   compressToUTF16 : function (input) {
     if (input == null) return "";
-    return LZString._compress(input, 15, function(a){return f(a+32);}) + " ";
+    return LZString144._compress(input, 15, function(a){return f(a+32);}) + " ";
   },
 
   decompressFromUTF16: function (compressed) {
     if (compressed == null) return "";
     if (compressed == "") return null;
-    return LZString._decompress(compressed.length, 16384, function(index) { return compressed.charCodeAt(index) - 32; });
+    return LZString144._decompress(compressed.length, 16384, function(index) { return compressed.charCodeAt(index) - 32; });
   },
 
   //compress into uint8array (UCS-2 big endian format)
   compressToUint8Array: function (uncompressed) {
-    var compressed = LZString.compress(uncompressed);
+    var compressed = LZString144.compress(uncompressed);
     var buf=new Uint8Array(compressed.length*2); // 2 bytes per character
 
     for (var i=0, TotalLen=compressed.length; i<TotalLen; i++) {
@@ -71,7 +71,7 @@ var LZString = {
   //decompress from uint8array (UCS-2 big endian format)
   decompressFromUint8Array:function (compressed) {
     if (compressed===null || compressed===undefined){
-        return LZString.decompress(compressed);
+        return LZString144.decompress(compressed);
     } else {
         var buf=new Array(compressed.length/2); // 2 bytes per character
         for (var i=0, TotalLen=buf.length; i<TotalLen; i++) {
@@ -82,7 +82,7 @@ var LZString = {
         buf.forEach(function (c) {
           result.push(f(c));
         });
-        return LZString.decompress(result.join(''));
+        return LZString144.decompress(result.join(''));
 
     }
 
@@ -92,7 +92,7 @@ var LZString = {
   //compress into a string that is already URI encoded
   compressToEncodedURIComponent: function (input) {
     if (input == null) return "";
-    return LZString._compress(input, 6, function(a){return keyStrUriSafe.charAt(a);});
+    return LZString144._compress(input, 6, function(a){return keyStrUriSafe.charAt(a);});
   },
 
   //decompress from an output of compressToEncodedURIComponent
@@ -100,11 +100,11 @@ var LZString = {
     if (input == null) return "";
     if (input == "") return null;
     input = input.replace(/ /g, "+");
-    return LZString._decompress(input.length, 32, function(index) { return getBaseValue(keyStrUriSafe, input.charAt(index)); });
+    return LZString144._decompress(input.length, 32, function(index) { return getBaseValue(keyStrUriSafe, input.charAt(index)); });
   },
 
   compress: function (uncompressed) {
-    return LZString._compress(uncompressed, 16, function(a){return f(a);});
+    return LZString144._compress(uncompressed, 16, function(a){return f(a);});
   },
   _compress: function (uncompressed, bitsPerChar, getCharFromInt) {
     if (uncompressed == null) return "";
@@ -215,12 +215,11 @@ var LZString = {
         context_w = String(context_c);
       }
     }
-	console.log(context_w);
+
     // Output the code for w.
     if (context_w !== "") {
       if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate,context_w)) {
         if (context_w.charCodeAt(0)<256) {
-			console.log("< 256", context_data_val, context_data_position);
           for (i=0 ; i<context_numBits ; i++) {
             context_data_val = (context_data_val << 1);
             if (context_data_position == bitsPerChar-1) {
@@ -297,7 +296,7 @@ var LZString = {
         context_numBits++;
       }
     }
-	console.log(context_data, context_data_position, context_data_val);
+
     // Mark the end of the stream
     value = 2;
     for (i=0 ; i<context_numBits ; i++) {
@@ -311,12 +310,11 @@ var LZString = {
       }
       value = value >> 1;
     }
-	console.log(context_data, context_data_position, context_data_val);
+
     // Flush the last char
     while (true) {
       context_data_val = (context_data_val << 1);
       if (context_data_position == bitsPerChar-1) {
-		console.log(context_data_val);
         context_data.push(getCharFromInt(context_data_val));
         break;
       }
@@ -328,7 +326,7 @@ var LZString = {
   decompress: function (compressed) {
     if (compressed == null) return "";
     if (compressed == "") return null;
-    return LZString._decompress(compressed.length, 32768, function(index) { return compressed.charCodeAt(index); });
+    return LZString144._decompress(compressed.length, 32768, function(index) { return compressed.charCodeAt(index); });
   },
 
   _decompress: function (length, resetValue, getNextValue) {
@@ -493,11 +491,11 @@ var LZString = {
     }
   }
 };
-  return LZString;
+  return LZString144;
 })();
 
 if (typeof define === 'function' && define.amd) {
-  define(function () { return LZString; });
+  define(function () { return LZString144; });
 } else if( typeof module !== 'undefined' && module != null ) {
-  module.exports = LZString
+  module.exports = LZString144
 }

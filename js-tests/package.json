@@ -1,0 +1,15 @@
+{
+  "name": "js-tests",
+  "version": "0.0.1",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "node server.js",
+    "start": "node server.js"
+  },
+  "author": "adumbidiot",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
