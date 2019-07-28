@@ -1,0 +1,25 @@
+<html>
+	<head>
+		<!--<script src="lz-string-1.0.2.js"></script>-->
+		<script src="lz-string.js"></script>
+	</head>
+	<script>
+		function process(data){
+			let key = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$";
+			let ret = "";
+			for(let i = 0; i != data.length; i++){
+				ret += String.fromCharCode(key.indexOf(data[i]));
+				//ret.push(key.indexOf(data[i]));
+			}
+			return ret;
+		}
+		let data = "ᎅ〦䀀";
+		let data1 = "N4IgrgzgpgTg4mAlgExALhMgHFArF5KAFgFoAzATgGMA2EosgJgAYSsBmKVmgRgEMeZKs3ZYqfdiAA0IAPZgALgBtEAOygAxREqjoQAByr6YsljywA3GgDoAHgFsl0kBCqyYagOYAFPgoAWevr6NAA6oRCI9hDhCgCe+lCuHvoKFjzhhsamzOZWmXxUANZ8nkmZRiZmljQA7mrIsrUQ+oUlZeFKAPq13dlk2lA8XcE2AFYQzoUKYHxKAMpuMLpozDL6shCRAEY6i+4rjDLQbqrIEACSqgBKSfIwVCvsAOwyhAp82pMYzAD1jL8XtYXhRfqwANR-AByfChvx4IAAvkA"
+		let data2 = "E4UwJk";
+		let newData = process(data2);
+		console.log(newData);
+		console.log(LZString.decompress(newData));
+		//console.log(LZString.decompressFromEncodedURIComponent("E4UwJk"));
+		console.log(LZString.compress("red"));
+	</script>
+</html>
