@@ -11,26 +11,19 @@ Add the following to your `Cargo.toml` file:
 lz-string = { git = "https://github.com/adumbidiot/lz-string-rs" }
 ```
 
-and to the top of your `main.rs`:
-
-```rust
-extern crate lz_string;
-```
-
 ## Getting Started
 
 ```rust
-extern crate lz_string;
 use lz_string::{
-    compress,
-	decompress,
+    compress_str,
+    decompress_str,
 };
 
 const RED_STR: &'static str = "red";
 
 fn main(){
-	let compressed = compress(&RED_STR, 16, std::char::from_u32); //The 16 is maximum number of bits per char
-    let decompressed = decompress(&compressed, 32_768).unwrap(); //The 32,768 is 2^(16 - 1).
+    let compressed = compress_str(&RED_STR);
+    let decompressed = decompress_str(&compressed).unwrap();
     assert_eq!(RED_STR, decompressed);
 }
 ```

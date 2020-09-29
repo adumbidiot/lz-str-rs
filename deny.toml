@@ -1,0 +1,61 @@
+targets = [
+    { triple = "x86_64-unknown-linux-gnu" },
+    { triple = "x86_64-unknown-linux-musl" },
+    { triple = "x86_64-apple-darwin" },
+    { triple = "x86_64-pc-windows-msvc" },
+]
+
+[advisories]
+vulnerability = "deny"
+unmaintained = "deny"
+notice = "deny"
+ignore = []
+
+[licenses]
+unlicensed = "deny"
+copyleft = "deny"
+allow-osi-fsf-free = "neither"
+confidence-threshold = 0.93
+default = "deny"
+private = { ignore = true }
+allow = [ "Apache-2.0", "MIT" ]
+exceptions = []
+
+[bans]
+multiple-versions = "deny"
+highlight = "all"
+skip = []
+
+# Mostly soundness denies since the advisory lacks a section for soundess bugs
+deny = [
+    # https://github.com/RustSec/advisory-db/issues/298
+    { name = "linked-hash-map", version = "<0.5.3" },
+    
+    # https://github.com/RustSec/advisory-db/pull/290
+    { name = "bigint", version = "*" },
+    
+    # https://github.com/RustSec/advisory-db/pull/293
+    # NOTE: May be sound in the future: https://github.com/RustSec/advisory-db/pull/293#issuecomment-641898680
+    { name = "rio", version = "*" },
+
+    # https://github.com/RustSec/advisory-db/issues/299
+    { name = "smallvec", version = "<0.6.13" },
+    
+    # https://github.com/RustSec/advisory-db/pull/268
+    { name = "plutonium", version = "*" },
+    
+    # https://github.com/RustSec/advisory-db/pull/308
+    { name = "traitobject", version = "*" },
+    
+    # https://github.com/RustSec/advisory-db/issues/305
+    { name = "rental", version = "*" },
+    
+    # Appears to be moving towards integrating rio more tightly for io_uring support
+    { name = "sled", version = "*" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = [ "https://github.com/rust-lang/crates.io-index" ]
+allow-git = []

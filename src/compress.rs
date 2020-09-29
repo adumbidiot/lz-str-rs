@@ -1,25 +1,26 @@
+use crate::constants::URI_KEY;
 use std::collections::HashMap;
 
 #[derive(Debug)]
-struct CompressContext<F: Fn(u32) -> Option<char>> {
+pub(crate) struct CompressContext<F: Fn(u32) -> u32> {
     dictionary: HashMap<String, u32>,
-    dictionary_to_create: HashMap<String, bool>, //TODO: Hashset?
+    dictionary_to_create: HashMap<String, bool>, // TODO: Hashset?
     wc: String,
     w: String,
     enlarge_in: usize,
     dict_size: usize,
     num_bits: usize,
     result: String,
-    //Data
-    string: String,
+    // Data
+    output: Vec<u32>,
     val: u32,
     position: usize,
-    //Limits
+    // Limits
     bits_per_char: usize,
     to_char: F,
 }
 
-impl<F: Fn(u32) -> Option<char>> CompressContext<F> {
+impl<F: Fn(u32) -> u32> CompressContext<F> {
     pub fn new(bits_per_char: usize, to_char: F) -> Self {
         CompressContext {
             dictionary: HashMap::new(),
@@ -30,7 +31,7 @@ impl<F: Fn(u32) -> Option<char>> CompressContext<F> {
             dict_size: 3,
             num_bits: 2,
             result: String::new(),
-            string: String::new(),
+            output: Vec::new(),
             val: 0,
             position: 0,
             bits_per_char,
@@ -60,8 +61,8 @@ impl<F: Fn(u32) -> Option<char>> CompressContext<F> {
         self.val = (self.val << 1) | value;
         if self.position == self.bits_per_char - 1 {
             self.position = 0;
-            let char_data = (self.to_char)(self.val).unwrap();
-            self.string.push(char_data);
+            let char_data = (self.to_char)(self.val);
+            self.output.push(char_data);
             self.val = 0;
         } else {
             self.position += 1;
@@ -86,16 +87,21 @@ impl<F: Fn(u32) -> Option<char>> CompressContext<F> {
     }
 }
 
-pub fn compress_uri(data: &str) -> Option<String> {
-    let key = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$";
-    Some(compress(&data, 6, |n| key.chars().nth(n as usize)))
+pub fn compress_str(input: &str) -> Vec<u32> {
+    compress(input, 16, |n| n)
 }
 
-pub fn compress<F: Fn(u32) -> Option<char>>(
+pub fn compress_uri(data: &str) -> Vec<u32> {
+    compress(&data, 6, |n| {
+        u32::from(URI_KEY.chars().nth(n as usize).unwrap())
+    })
+}
+
+pub fn compress<F: Fn(u32) -> u32>(
     uncompressed: &str,
     bits_per_char: usize,
     to_char: F,
-) -> String {
+) -> Vec<u32> {
     let mut ctx = CompressContext::new(bits_per_char, to_char);
     uncompressed.chars().for_each(|c| {
         let c_str = c.to_string();
@@ -118,18 +124,18 @@ pub fn compress<F: Fn(u32) -> Option<char>>(
     });
 
     // Output the code for w.
-    if ctx.w.len() > 0 {
+    if !ctx.w.is_empty() {
         ctx.produce_w();
     }
 
     // Mark the end of the stream
     ctx.write_bits(ctx.num_bits, 2);
 
-    let str_len = ctx.string.len();
+    let str_len = ctx.output.len();
     // Flush the last char
-    while ctx.string.len() == str_len {
+    while ctx.output.len() == str_len {
         ctx.write_bit(0);
     }
 
-    ctx.string
+    ctx.output
 }
