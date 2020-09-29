@@ -1,15 +1,14 @@
 use lz_string::{
     compress_str,
     decompress_str,
-    u32_array_to_string,
+    str_to_u32_vec,
 };
 use rand::prelude::*;
 use std::io::Write;
 
 fn round(data: &str) {
     let compressed = compress_str(&data);
-    let compressed_str = unsafe { u32_array_to_string(&compressed) };
-    assert_ne!(data, compressed_str);
+    assert_ne!(&str_to_u32_vec(data), &compressed);
     let decompressed = decompress_str(&compressed).unwrap();
     assert_eq!(data, decompressed);
 }
@@ -22,8 +21,7 @@ fn round_hello_world() {
 #[test]
 fn round_empty_string() {
     let compressed = compress_str("");
-    let compressed_str = unsafe { u32_array_to_string(&compressed) };
-    assert_ne!("", compressed_str);
+    assert_ne!(&str_to_u32_vec(""), &compressed);
 
     let decompressed = decompress_str(&compressed).unwrap();
     assert_eq!("", decompressed);
@@ -67,9 +65,8 @@ fn round_all_utf16() {
 fn round_repeating_string() {
     let test_string = "aaaaabaaaaacaaaaadaaaaaeaaaaa";
     let compressed = compress_str(&test_string);
-    let compressed_str = unsafe { u32_array_to_string(&compressed) };
-    assert_ne!(test_string, compressed_str);
-    assert!(test_string.len() > compressed_str.len());
+    assert_ne!(&str_to_u32_vec(&test_string), &compressed);
+    assert!(test_string.len() > compressed.len());
     let decompressed = decompress_str(&compressed).unwrap();
     assert_eq!(test_string, decompressed);
 }
@@ -87,8 +84,7 @@ fn round_long_string() {
     .unwrap();
 
     let compressed = compress_str(&test_string);
-    let compressed_str = unsafe { u32_array_to_string(&compressed) };
-    assert_ne!(test_string, compressed_str);
+    assert_ne!(&str_to_u32_vec(&test_string), &compressed);
     assert!(test_string.len() > compressed.len());
     let decompressed = decompress_str(&compressed).unwrap();
     assert_eq!(test_string, decompressed);

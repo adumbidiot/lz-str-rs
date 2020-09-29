@@ -3,7 +3,7 @@ use lz_string::{
     compress_uri,
     decompress_str,
     decompress_uri,
-    u32_array_to_string,
+    str_to_u32_vec,
 };
 
 const RED_STR: &str = "red";
@@ -11,8 +11,7 @@ const RED_STR: &str = "red";
 #[test]
 pub fn round_red_uri() {
     let compressed = compress_uri(&RED_STR);
-    let compressed_str = unsafe { u32_array_to_string(&compressed) };
-    assert_eq!(&compressed_str, "E4UwJkA");
+    assert_eq!(&compressed, &str_to_u32_vec("E4UwJkA"));
     let decompressed = decompress_uri(&compressed).unwrap();
     assert_eq!(RED_STR, decompressed);
 }
@@ -20,7 +19,6 @@ pub fn round_red_uri() {
 #[test]
 pub fn round_red() {
     let compressed = compress_str(&RED_STR);
-    let _compressed_str = unsafe { u32_array_to_string(&compressed) };
     let decompressed = decompress_str(&compressed).unwrap();
     assert_eq!(RED_STR, decompressed);
 }
@@ -28,16 +26,14 @@ pub fn round_red() {
 #[test]
 pub fn compress_red() {
     let compressed = compress_str(&RED_STR);
-    let compressed_str = unsafe { u32_array_to_string(&compressed) };
-    assert_eq!("ᎅ〦䀀", compressed_str);
+    assert_eq!(str_to_u32_vec("ᎅ〦䀀"), compressed);
 }
 
 #[test]
 pub fn compress_repeat() {
     let data = "aaaaabaaaaacaaaaadaaaaaeaaaaa";
     let compressed = compress_uri(&data);
-    let compressed_str = unsafe { u32_array_to_string(&compressed) };
-    assert_eq!(&compressed_str, "IYkI1EGNOATWBTWQ");
+    assert_eq!(&compressed, &str_to_u32_vec("IYkI1EGNOATWBTWQ"));
 }
 
 #[test]
