@@ -7,12 +7,14 @@ use std::{
 #[derive(Debug)]
 pub enum DecompressError {
     InvalidFirstEntry(u32),
+    MissingBits, // TODO: add num missing?
 }
 
 impl std::fmt::Display for DecompressError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             DecompressError::InvalidFirstEntry(val) => write!(f, "invalid first entry '{}'", val),
+            DecompressError::MissingBits => write!(f, "missing bits"),
         }
     }
 }
@@ -40,29 +42,29 @@ impl<'a> DecompressContext<'a> {
         }
     }
 
-    pub fn read_bit(&mut self) -> bool {
+    pub fn read_bit(&mut self) -> Option<bool> {
         let res = self.val & (self.position as u32);
         self.position >>= 1;
 
         if self.position == 0 {
             self.position = self.reset_val;
-            self.val = self.compressed_data[self.index] as u32;
+            self.val = *self.compressed_data.get(self.index)?;
             self.index += 1;
         }
 
-        res != 0
+        Some(res != 0)
     }
 
-    pub fn read_bits(&mut self, n: usize) -> u32 {
+    pub fn read_bits(&mut self, n: usize) -> Result<u32, DecompressError> {
         let mut res = 0;
         let max_power = 2_u32.pow(n as u32);
         let mut power = 1;
         while power != max_power {
-            res |= self.read_bit() as u32 * power;
+            res |= u32::from(self.read_bit().ok_or(DecompressError::MissingBits)?) * power;
             power <<= 1;
         }
 
-        res
+        Ok(res)
     }
 }
 
@@ -96,11 +98,11 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, De
         dictionary.insert(i as u32, (i as char).to_string());
     }
 
-    let next = ctx.read_bits(2);
+    let next = ctx.read_bits(2)?;
     let first_entry = match next {
         0 | 1 => {
             let bits_to_read = (next * 8) + 8;
-            let bits = ctx.read_bits(bits_to_read as usize);
+            let bits = ctx.read_bits(bits_to_read as usize)?;
             std::char::from_u32(bits).unwrap()
         }
         2 => return Ok(String::new()),
@@ -115,7 +117,7 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, De
     let mut dict_size = 4;
     let mut entry;
     loop {
-        let mut cc = ctx.read_bits(num_bits);
+        let mut cc = ctx.read_bits(num_bits)?;
         match cc {
             0 | 1 => {
                 let bits_to_read = (cc * 8) + 8;
@@ -123,7 +125,7 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, De
                     // if (errorCount++ > 10000) return "Error"; //TODO: Error logic
                 }
 
-                let bits = ctx.read_bits(bits_to_read as usize);
+                let bits = ctx.read_bits(bits_to_read as usize)?;
                 let c = std::char::from_u32(bits).unwrap();
                 dictionary.insert(dict_size, c.to_string());
                 dict_size += 1;
