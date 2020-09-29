@@ -18,3 +18,9 @@ fn decompress_bed123() {
     let arr = string_to_u32_array("bed123");
     assert!(decompress_str(&arr).is_err());
 }
+
+#[test]
+fn decompress_zed123() {
+    let arr = string_to_u32_array("zed123");
+    assert!(decompress_str(&arr).is_err());
+}

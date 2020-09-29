@@ -8,6 +8,9 @@ use std::{
 pub enum DecompressError {
     InvalidFirstEntry(u32),
     MissingBits, // TODO: add num missing?
+
+    // Generic return
+    Invalid,
 }
 
 impl std::fmt::Display for DecompressError {
@@ -15,6 +18,7 @@ impl std::fmt::Display for DecompressError {
         match self {
             DecompressError::InvalidFirstEntry(val) => write!(f, "invalid first entry '{}'", val),
             DecompressError::MissingBits => write!(f, "missing bits"),
+            DecompressError::Invalid => write!(f, "invalid data"),
         }
     }
 }
@@ -145,16 +149,11 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, De
 
         if dictionary.contains_key(&cc) {
             entry = dictionary[&cc].clone();
+        } else if cc == dict_size {
+            entry = w.clone();
+            entry.push(w.chars().next().unwrap());
         } else {
-            // TODO: Fix clippy
-            #[allow(clippy::collapsible_if)]
-            if cc == dict_size {
-                entry = w.clone();
-                entry.push(w.chars().next().unwrap());
-            } else {
-                // return None;
-                todo!();
-            }
+            return Err(DecompressError::Invalid);
         }
 
         result += &entry;
