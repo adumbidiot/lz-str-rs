@@ -5,6 +5,21 @@ use std::{
 };
 
 #[derive(Debug)]
+pub enum DecompressError {
+    InvalidFirstEntry(u32),
+}
+
+impl std::fmt::Display for DecompressError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DecompressError::InvalidFirstEntry(val) => write!(f, "invalid first entry '{}'", val),
+        }
+    }
+}
+
+impl std::error::Error for DecompressError {}
+
+#[derive(Debug)]
 pub struct DecompressContext<'a> {
     val: u32,
     compressed_data: &'a [u32],
@@ -51,11 +66,15 @@ impl<'a> DecompressContext<'a> {
     }
 }
 
-pub fn decompress_str(compressed: &[u32]) -> Option<String> {
+pub fn decompress_str(compressed: &[u32]) -> Result<String, DecompressError> {
     decompress(&compressed, 16)
 }
 
-pub fn decompress_uri(compressed: &[u32]) -> Option<String> {
+pub fn decompress_uri(compressed: &[u32]) -> Result<String, DecompressError> {
+    if compressed.is_empty() {
+        return Ok(String::new());
+    }
+
     // let compressed = compressed.replace(" ", "+"); //Is this even necessary?
     let compressed: Option<Vec<u32>> = compressed
         .iter()
@@ -66,12 +85,12 @@ pub fn decompress_uri(compressed: &[u32]) -> Option<String> {
                 .map(|n| u32::try_from(n).unwrap())
         })
         .collect();
-    decompress(&compressed?, 6)
+    decompress(&compressed.unwrap(), 6)
 }
 
-pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Option<String> {
+pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, DecompressError> {
     let reset_val = 2_usize.pow(u32::try_from(bits_per_char).unwrap() - 1);
-    let mut ctx = DecompressContext::new(compressed, reset_val); //32768
+    let mut ctx = DecompressContext::new(compressed, reset_val); // 32768
     let mut dictionary: HashMap<u32, String> = HashMap::new();
     for i in 0_u8..3_u8 {
         dictionary.insert(i as u32, (i as char).to_string());
@@ -82,14 +101,15 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Option<String> {
         0 | 1 => {
             let bits_to_read = (next * 8) + 8;
             let bits = ctx.read_bits(bits_to_read as usize);
-            std::char::from_u32(bits)
+            std::char::from_u32(bits).unwrap()
         }
-        _ => None,
+        2 => return Ok(String::new()),
+        first_entry_value => return Err(DecompressError::InvalidFirstEntry(first_entry_value)),
     };
-    dictionary.insert(3, first_entry?.to_string());
+    dictionary.insert(3, first_entry.to_string());
 
-    let mut w = first_entry?.to_string();
-    let mut result = first_entry?.to_string();
+    let mut w = first_entry.to_string();
+    let mut result = first_entry.to_string();
     let mut num_bits = 3;
     let mut enlarge_in = 4;
     let mut dict_size = 4;
@@ -100,7 +120,7 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Option<String> {
             0 | 1 => {
                 let bits_to_read = (cc * 8) + 8;
                 if cc == 0 {
-                    //if (errorCount++ > 10000) return "Error"; //TODO: Error logic
+                    // if (errorCount++ > 10000) return "Error"; //TODO: Error logic
                 }
 
                 let bits = ctx.read_bits(bits_to_read as usize);
@@ -111,7 +131,7 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Option<String> {
                 enlarge_in -= 1;
             }
             2 => {
-                return Some(result);
+                return Ok(result);
             }
             _ => {}
         }
@@ -128,9 +148,10 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Option<String> {
             #[allow(clippy::collapsible_if)]
             if cc == dict_size {
                 entry = w.clone();
-                entry.push(w.chars().next()?);
+                entry.push(w.chars().next().unwrap());
             } else {
-                return None;
+                // return None;
+                todo!();
             }
         }
 
@@ -138,7 +159,7 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Option<String> {
 
         // Add w+entry[0] to the dictionary.
         let mut to_be_inserted = w.clone();
-        to_be_inserted.push(entry.chars().next()?);
+        to_be_inserted.push(entry.chars().next().unwrap());
         dictionary.insert(dict_size, to_be_inserted);
         dict_size += 1;
         enlarge_in -= 1;
