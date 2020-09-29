@@ -124,7 +124,7 @@ pub fn compress<F: Fn(u32) -> u32>(
     });
 
     // Output the code for w.
-    if ctx.w.len() > 0 {
+    if !ctx.w.is_empty() {
         ctx.produce_w();
     }
 

@@ -6,11 +6,11 @@ use lz_string::{
 #[test]
 fn decompress_red() {
     let arr = string_to_u32_array("red");
-    let _ = decompress_str(&arr).is_none();
+    assert!(decompress_str(&arr).is_none());
 }
 
 #[test]
 fn decompress_red_repeat() {
     let arr = string_to_u32_array(&"red".repeat(100));
-    decompress_str(&arr).is_none();
+    assert!(decompress_str(&arr).is_none());
 }

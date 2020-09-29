@@ -6,7 +6,7 @@ use lz_string::{
     u32_array_to_string,
 };
 
-const RED_STR: &'static str = "red";
+const RED_STR: &str = "red";
 
 #[test]
 pub fn round_red_uri() {

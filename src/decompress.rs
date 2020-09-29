@@ -124,6 +124,8 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Option<String> {
         if dictionary.contains_key(&cc) {
             entry = dictionary[&cc].clone();
         } else {
+            // TODO: Fix clippy
+            #[allow(clippy::collapsible_if)]
             if cc == dict_size {
                 entry = w.clone();
                 entry.push(w.chars().next()?);
