@@ -100,9 +100,10 @@ pub fn decompress_uri(compressed: &[u32]) -> Result<String, DecompressError> {
 }
 
 pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, DecompressError> {
-    let reset_val =
-        2_usize.pow(u32::try_from(bits_per_char).map_err(DecompressError::InvalidBitsPerChar)? - 1);
-    let mut ctx = DecompressContext::new(compressed, reset_val); // 32768
+    let reset_val_pow =
+        u32::try_from(bits_per_char).map_err(DecompressError::InvalidBitsPerChar)? - 1;
+    let reset_val = 2_usize.pow(reset_val_pow);
+    let mut ctx = DecompressContext::new(compressed, reset_val);
     let mut dictionary: HashMap<u32, String> = HashMap::new();
     for i in 0_u8..3_u8 {
         dictionary.insert(i as u32, (i as char).to_string());
@@ -132,7 +133,7 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, De
             0 | 1 => {
                 let bits_to_read = (cc * 8) + 8;
                 if cc == 0 {
-                    // if (errorCount++ > 10000) return "Error"; //TODO: Error logic
+                    // if (errorCount++ > 10000) return "Error"; // TODO: Error logic
                 }
 
                 let bits = ctx.read_bits(bits_to_read as usize)?;

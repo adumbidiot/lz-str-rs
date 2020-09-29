@@ -38,7 +38,7 @@ pub fn compress_repeat() {
 
 #[test]
 pub fn decompress_red() {
-    let compressed = "ᎅ〦䀀".chars().map(|c| c as u32).collect::<Vec<_>>();
+    let compressed = "ᎅ〦䀀".chars().map(u32::from).collect::<Vec<_>>();
     let decompressed = decompress_str(&compressed).unwrap();
     assert_eq!(RED_STR, decompressed);
 }
