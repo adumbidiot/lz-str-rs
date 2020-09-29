@@ -81,10 +81,6 @@ pub fn decompress_str(compressed: &[u32]) -> Result<String, DecompressError> {
 }
 
 pub fn decompress_uri(compressed: &[u32]) -> Result<String, DecompressError> {
-    if compressed.is_empty() {
-        return Ok(String::new());
-    }
-
     // let compressed = compressed.replace(" ", "+"); //Is this even necessary?
     let compressed: Option<Vec<u32>> = compressed
         .iter()
@@ -99,7 +95,15 @@ pub fn decompress_uri(compressed: &[u32]) -> Result<String, DecompressError> {
     decompress(&compressed.ok_or(DecompressError::Invalid)?, 6)
 }
 
+/// # Panics
+/// Panics if `bits_per_char` is greater than the number of bits in a `u32`.
 pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, DecompressError> {
+    assert!(bits_per_char <= std::mem::size_of::<u32>() * 8);
+
+    if compressed.is_empty() {
+        return Ok(String::new());
+    }
+
     let reset_val_pow =
         u32::try_from(bits_per_char).map_err(DecompressError::InvalidBitsPerChar)? - 1;
     let reset_val = 2_usize.pow(reset_val_pow);
