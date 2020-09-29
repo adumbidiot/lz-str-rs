@@ -8,6 +8,7 @@ use std::{
 pub enum DecompressError {
     InvalidFirstEntry(u32),
     MissingBits, // TODO: add num missing?
+    InvalidChar(u32),
 
     // Generic return
     Invalid,
@@ -18,6 +19,7 @@ impl std::fmt::Display for DecompressError {
         match self {
             DecompressError::InvalidFirstEntry(val) => write!(f, "invalid first entry '{}'", val),
             DecompressError::MissingBits => write!(f, "missing bits"),
+            DecompressError::InvalidChar(v) => write!(f, "invalid char '0x{:X}'", v),
             DecompressError::Invalid => write!(f, "invalid data"),
         }
     }
@@ -130,7 +132,7 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, De
                 }
 
                 let bits = ctx.read_bits(bits_to_read as usize)?;
-                let c = std::char::from_u32(bits).unwrap();
+                let c = std::char::from_u32(bits).ok_or(DecompressError::InvalidChar(bits))?;
                 dictionary.insert(dict_size, c.to_string());
                 dict_size += 1;
                 cc = dict_size - 1;

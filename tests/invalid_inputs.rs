@@ -14,13 +14,11 @@ fn decompress_red() {
 */
 
 #[test]
-fn decompress_bed123() {
-    let arr = string_to_u32_array("bed123");
-    assert!(decompress_str(&arr).is_err());
-}
+fn invalid_decompress() {
+    let invalid_data = &["bed123", "zed123", "ed[[[[d1d[[[[dF9]"];
 
-#[test]
-fn decompress_zed123() {
-    let arr = string_to_u32_array("zed123");
-    assert!(decompress_str(&arr).is_err());
+    for data in invalid_data {
+        let arr = string_to_u32_array(data);
+        assert!(decompress_str(&arr).is_err());
+    }
 }
