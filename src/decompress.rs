@@ -9,6 +9,7 @@ pub enum DecompressError {
     InvalidFirstEntry(u32),
     MissingBits, // TODO: add num missing?
     InvalidChar(u32),
+    InvalidBitsPerChar(std::num::TryFromIntError),
 
     // Generic return
     Invalid,
@@ -20,6 +21,7 @@ impl std::fmt::Display for DecompressError {
             DecompressError::InvalidFirstEntry(val) => write!(f, "invalid first entry '{}'", val),
             DecompressError::MissingBits => write!(f, "missing bits"),
             DecompressError::InvalidChar(v) => write!(f, "invalid char '0x{:X}'", v),
+            DecompressError::InvalidBitsPerChar(e) => write!(f, "invalid bits per char, {}", e),
             DecompressError::Invalid => write!(f, "invalid data"),
         }
     }
@@ -90,14 +92,16 @@ pub fn decompress_uri(compressed: &[u32]) -> Result<String, DecompressError> {
             URI_KEY
                 .bytes()
                 .position(|k| u8::try_from(*c) == Ok(k))
-                .map(|n| u32::try_from(n).unwrap())
+                .map(|n| u32::try_from(n).ok())
         })
+        .flatten()
         .collect();
-    decompress(&compressed.unwrap(), 6)
+    decompress(&compressed.ok_or(DecompressError::Invalid)?, 6)
 }
 
 pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, DecompressError> {
-    let reset_val = 2_usize.pow(u32::try_from(bits_per_char).unwrap() - 1);
+    let reset_val =
+        2_usize.pow(u32::try_from(bits_per_char).map_err(DecompressError::InvalidBitsPerChar)? - 1);
     let mut ctx = DecompressContext::new(compressed, reset_val); // 32768
     let mut dictionary: HashMap<u32, String> = HashMap::new();
     for i in 0_u8..3_u8 {
@@ -109,7 +113,7 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, De
         0 | 1 => {
             let bits_to_read = (next * 8) + 8;
             let bits = ctx.read_bits(bits_to_read as usize)?;
-            std::char::from_u32(bits).unwrap()
+            std::char::from_u32(bits).ok_or(DecompressError::InvalidChar(bits))?
         }
         2 => return Ok(String::new()),
         first_entry_value => return Err(DecompressError::InvalidFirstEntry(first_entry_value)),
@@ -153,7 +157,7 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, De
             entry = dictionary[&cc].clone();
         } else if cc == dict_size {
             entry = w.clone();
-            entry.push(w.chars().next().unwrap());
+            entry.push(w.chars().next().ok_or(DecompressError::Invalid)?);
         } else {
             return Err(DecompressError::Invalid);
         }
@@ -162,7 +166,7 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, De
 
         // Add w+entry[0] to the dictionary.
         let mut to_be_inserted = w.clone();
-        to_be_inserted.push(entry.chars().next().unwrap());
+        to_be_inserted.push(entry.chars().next().ok_or(DecompressError::Invalid)?);
         dictionary.insert(dict_size, to_be_inserted);
         dict_size += 1;
         enlarge_in -= 1;
