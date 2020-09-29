@@ -1,20 +1,24 @@
-use std::collections::HashMap;
+use crate::constants::URI_KEY;
+use std::{
+    collections::HashMap,
+    convert::TryFrom,
+};
+
 #[derive(Debug)]
-pub struct DecompressContext {
+pub struct DecompressContext<'a> {
     val: u32,
-    string: Vec<char>,
+    compressed_data: &'a [u32],
     position: usize,
     index: usize,
     reset_val: usize,
 }
 
-impl DecompressContext {
-    pub fn new(string: &str, reset_val: usize) -> Self {
-        let mut string: Vec<char> = string.chars().collect();
-        string.push(0 as char); //Js version seems to rely on being able to load a nonexistent byte, so just pad it here...? Maybe a bug in my impl?
+impl<'a> DecompressContext<'a> {
+    pub fn new(compressed_data: &'a [u32], reset_val: usize) -> Self {
+        // compressed_data.push(0 as char); // Js version seems to rely on being able to load a nonexistent byte, so just pad it here...? Maybe a bug in my impl?
         DecompressContext {
-            val: string[0] as u32,
-            string,
+            val: compressed_data[0],
+            compressed_data,
             position: reset_val,
             index: 1,
             reset_val,
@@ -27,7 +31,7 @@ impl DecompressContext {
 
         if self.position == 0 {
             self.position = self.reset_val;
-            self.val = self.string[self.index] as u32;
+            self.val = self.compressed_data[self.index] as u32;
             self.index += 1;
         }
 
@@ -47,21 +51,26 @@ impl DecompressContext {
     }
 }
 
-pub fn decompress_uri(compressed: &str) -> Option<String> {
-    let key = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$";
-    //let compressed = compressed.replace(" ", "+"); //Is this even necessary?
-    let compressed: Option<String> = compressed
-        .chars()
-        .map(|c| {
-            key.chars()
-                .position(|k| c == k)
-                .map(|n| std::char::from_u32(n as u32).unwrap())
-        })
-        .collect();
-    decompress(&compressed?, 32)
+pub fn decompress_str(compressed: &[u32]) -> Option<String> {
+    decompress(&compressed, 16)
 }
 
-pub fn decompress(compressed: &str, reset_val: usize) -> Option<String> {
+pub fn decompress_uri(compressed: &[u32]) -> Option<String> {
+    // let compressed = compressed.replace(" ", "+"); //Is this even necessary?
+    let compressed: Option<Vec<u32>> = compressed
+        .iter()
+        .map(|c| {
+            URI_KEY
+                .bytes()
+                .position(|k| u8::try_from(*c) == Ok(k))
+                .map(|n| u32::try_from(n).unwrap())
+        })
+        .collect();
+    decompress(&compressed?, 6)
+}
+
+pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Option<String> {
+    let reset_val = 2_usize.pow(u32::try_from(bits_per_char).unwrap() - 1);
     let mut ctx = DecompressContext::new(compressed, reset_val); //32768
     let mut dictionary: HashMap<u32, String> = HashMap::new();
     for i in 0_u8..3_u8 {
@@ -91,7 +100,7 @@ pub fn decompress(compressed: &str, reset_val: usize) -> Option<String> {
             0 | 1 => {
                 let bits_to_read = (cc * 8) + 8;
                 if cc == 0 {
-                    //if (errorCount++ > 10000) return "Error"; //TODO: Error logic 
+                    //if (errorCount++ > 10000) return "Error"; //TODO: Error logic
                 }
 
                 let bits = ctx.read_bits(bits_to_read as usize);
