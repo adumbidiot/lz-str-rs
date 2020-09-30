@@ -20,6 +20,7 @@ criterion = "0.3.3"
 
 [features]
 wasm-bindgen-support = [ "wasm-bindgen", "js-sys" ]
+nightly = [ "criterion/real_blackbox" ]
 
 [[bench]]
 name = "compress"
