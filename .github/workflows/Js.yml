@@ -1,0 +1,26 @@
+name: JS
+'on':
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Wasm-Pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - name: Build lz-string-rs
+        run: wasm-pack build --target nodejs -- --features wasm-bindgen-support
+      - name: Install Test Dependencies
+        run: |
+            cd js-test
+            npm i
+      - name: Run tests
+        run: |
+            cd js-test
+            npm test
