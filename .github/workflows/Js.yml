@@ -13,7 +13,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install Wasm-Pack
-        run: npm install -g wasm-pack 
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - name: Build lz-string-rs
         run: wasm-pack build --target nodejs -- --features wasm-bindgen-support
       - name: Install Test Dependencies
