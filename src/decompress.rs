@@ -39,6 +39,7 @@ pub struct DecompressContext<'a> {
 }
 
 impl<'a> DecompressContext<'a> {
+    #[inline]
     pub fn new(compressed_data: &'a [u32], reset_val: usize) -> Self {
         // compressed_data.push(0 as char); // Js version seems to rely on being able to load a nonexistent byte, so just pad it here...? Maybe a bug in my impl?
         DecompressContext {
@@ -50,6 +51,7 @@ impl<'a> DecompressContext<'a> {
         }
     }
 
+    #[inline]
     pub fn read_bit(&mut self) -> Option<bool> {
         let res = self.val & (self.position as u32);
         self.position >>= 1;
@@ -63,6 +65,7 @@ impl<'a> DecompressContext<'a> {
         Some(res != 0)
     }
 
+    #[inline]
     pub fn read_bits(&mut self, n: usize) -> Result<u32, DecompressError> {
         let mut res = 0;
         let max_power = 2_u32.pow(n as u32);
@@ -76,10 +79,12 @@ impl<'a> DecompressContext<'a> {
     }
 }
 
+#[inline]
 pub fn decompress_str(compressed: &[u32]) -> Result<String, DecompressError> {
     decompress(&compressed, 16)
 }
 
+#[inline]
 pub fn decompress_uri(compressed: &[u32]) -> Result<String, DecompressError> {
     // let compressed = compressed.replace(" ", "+"); //Is this even necessary?
     let compressed: Option<Vec<u32>> = compressed
@@ -97,6 +102,7 @@ pub fn decompress_uri(compressed: &[u32]) -> Result<String, DecompressError> {
 
 /// # Panics
 /// Panics if `bits_per_char` is greater than the number of bits in a `u32`.
+#[inline]
 pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, DecompressError> {
     assert!(bits_per_char <= std::mem::size_of::<u32>() * 8);
 
