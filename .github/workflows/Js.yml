@@ -13,7 +13,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install Wasm-Pack
-        uses: npm install -g wasm-pack 
+        run: npm install -g wasm-pack 
       - name: Build lz-string-rs
         run: wasm-pack build --target nodejs -- --features wasm-bindgen-support
       - name: Install Test Dependencies
