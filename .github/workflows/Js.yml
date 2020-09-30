@@ -1,4 +1,4 @@
-name: Rust
+name: JS
 'on':
   push:
     branches:
@@ -18,9 +18,9 @@ jobs:
         run: wasm-pack build --target nodejs -- --features wasm-bindgen-support
       - name: Install Test Dependencies
         run: |
-        cd js-test
-        npm i
+            cd js-test
+            npm i
       - name: Run tests
         run: |
-        cd js-test
-        npm test
+            cd js-test
+            npm test
