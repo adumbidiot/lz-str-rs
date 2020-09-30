@@ -3,6 +3,8 @@
 mod compress;
 mod constants;
 mod decompress;
+#[cfg(feature = "wasm-bindgen-support")]
+mod wasm_bindgen_support;
 
 pub use crate::{
     compress::{

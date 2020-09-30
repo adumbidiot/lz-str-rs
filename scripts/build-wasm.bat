@@ -1,0 +1,1 @@
+wasm-pack build --target nodejs -- --features wasm-bindgen-support

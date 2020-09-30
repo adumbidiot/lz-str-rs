@@ -3,8 +3,19 @@ name = "lz-string"
 version = "0.0.1"
 authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
 edition = "2018"
+description = "A port of lz-string to Rust"
+repository = "https://github.com/adumbidiot/lz-string-rs"
+license = "MIT"
+
+[lib]
+crate-type = [ "cdylib", "rlib" ]
 
 [dependencies]
+js-sys = { version = "0.3.45", optional = true }
+wasm-bindgen = { version = "0.2.68", optional = true }
 
 [dev-dependencies]
-rand = "0.7"
+rand = "0.7.3"
+
+[features]
+wasm-bindgen-support = [ "wasm-bindgen", "js-sys" ]

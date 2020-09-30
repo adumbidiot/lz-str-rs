@@ -1,0 +1,27 @@
+{
+  "name": "js-test",
+  "version": "0.0.0",
+  "description": "A testbed for lz-string-rs",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adumbidiot/lz-string-rs.git"
+  },
+  "keywords": [
+    "test"
+  ],
+  "author": "adumbidiot",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/adumbidiot/lz-string-rs/issues"
+  },
+  "homepage": "https://github.com/adumbidiot/lz-string-rs#readme",
+  "dependencies": {
+    "lz-string-js": "npm:lz-string@^1.4.4",
+    "lz-string": "file:../pkg",
+    "mocha": "^8.1.3"
+  }
+}
