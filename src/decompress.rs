@@ -2,31 +2,6 @@ use crate::constants::URI_KEY;
 use std::convert::TryFrom;
 
 #[derive(Debug)]
-pub enum DecompressError {
-    InvalidFirstEntry(u32),
-    MissingBits, // TODO: add num missing?
-    InvalidChar(u32),
-    InvalidBitsPerChar(std::num::TryFromIntError),
-
-    // Generic return
-    Invalid,
-}
-
-impl std::fmt::Display for DecompressError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            DecompressError::InvalidFirstEntry(val) => write!(f, "invalid first entry '{}'", val),
-            DecompressError::MissingBits => write!(f, "missing bits"),
-            DecompressError::InvalidChar(v) => write!(f, "invalid char '0x{:X}'", v),
-            DecompressError::InvalidBitsPerChar(e) => write!(f, "invalid bits per char, {}", e),
-            DecompressError::Invalid => write!(f, "invalid data"),
-        }
-    }
-}
-
-impl std::error::Error for DecompressError {}
-
-#[derive(Debug)]
 pub struct DecompressContext<'a> {
     val: u32,
     compressed_data: &'a [u32],
@@ -63,26 +38,26 @@ impl<'a> DecompressContext<'a> {
     }
 
     #[inline]
-    pub fn read_bits(&mut self, n: usize) -> Result<u32, DecompressError> {
+    pub fn read_bits(&mut self, n: usize) -> Option<u32> {
         let mut res = 0;
         let max_power = 2_u32.pow(n as u32);
         let mut power = 1;
         while power != max_power {
-            res |= u32::from(self.read_bit().ok_or(DecompressError::MissingBits)?) * power;
+            res |= u32::from(self.read_bit()?) * power;
             power <<= 1;
         }
 
-        Ok(res)
+        Some(res)
     }
 }
 
 #[inline]
-pub fn decompress_str(compressed: &[u32]) -> Result<String, DecompressError> {
+pub fn decompress_str(compressed: &[u32]) -> Option<String> {
     decompress(&compressed, 16)
 }
 
 #[inline]
-pub fn decompress_uri(compressed: &[u32]) -> Result<String, DecompressError> {
+pub fn decompress_uri(compressed: &[u32]) -> Option<String> {
     // let compressed = compressed.replace(" ", "+"); //Is this even necessary?
     let compressed: Option<Vec<u32>> = compressed
         .iter()
@@ -94,21 +69,20 @@ pub fn decompress_uri(compressed: &[u32]) -> Result<String, DecompressError> {
         })
         .flatten()
         .collect();
-    decompress(&compressed.ok_or(DecompressError::Invalid)?, 6)
+    decompress(&compressed?, 6)
 }
 
 /// # Panics
 /// Panics if `bits_per_char` is greater than the number of bits in a `u32`.
 #[inline]
-pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, DecompressError> {
+pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Option<String> {
     assert!(bits_per_char <= std::mem::size_of::<u32>() * 8);
 
     if compressed.is_empty() {
-        return Ok(String::new());
+        return Some(String::new());
     }
 
-    let reset_val_pow =
-        u32::try_from(bits_per_char).map_err(DecompressError::InvalidBitsPerChar)? - 1;
+    let reset_val_pow = u32::try_from(bits_per_char).ok()? - 1;
     let reset_val = 2_usize.pow(reset_val_pow);
     let mut ctx = DecompressContext::new(compressed, reset_val);
     let mut dictionary: Vec<String> = Vec::new();
@@ -121,10 +95,10 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, De
         0 | 1 => {
             let bits_to_read = (next * 8) + 8;
             let bits = ctx.read_bits(bits_to_read as usize)?;
-            std::char::from_u32(bits).ok_or(DecompressError::InvalidChar(bits))?
+            std::char::from_u32(bits)?
         }
-        2 => return Ok(String::new()),
-        first_entry_value => return Err(DecompressError::InvalidFirstEntry(first_entry_value)),
+        2 => return Some(String::new()),
+        _ => return None,
     };
     dictionary.insert(3, first_entry.to_string());
 
@@ -144,14 +118,14 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, De
                 // }
 
                 let bits = ctx.read_bits(bits_to_read as usize)?;
-                let c = std::char::from_u32(bits).ok_or(DecompressError::InvalidChar(bits))?;
+                let c = std::char::from_u32(bits)?;
                 dictionary.insert(dict_size, c.to_string());
                 dict_size += 1;
                 cc = dict_size - 1;
                 enlarge_in -= 1;
             }
             2 => {
-                return Ok(result);
+                return Some(result);
             }
             _ => {}
         }
@@ -165,16 +139,16 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, De
             entry = entry_value.clone();
         } else if cc == dict_size {
             entry = w.clone();
-            entry.push(w.chars().next().ok_or(DecompressError::Invalid)?);
+            entry.push(w.chars().next()?);
         } else {
-            return Err(DecompressError::Invalid);
+            return None;
         }
 
         result += &entry;
 
         // Add w+entry[0] to the dictionary.
         let mut to_be_inserted = w.clone();
-        to_be_inserted.push(entry.chars().next().ok_or(DecompressError::Invalid)?);
+        to_be_inserted.push(entry.chars().next()?);
         dictionary.insert(dict_size, to_be_inserted);
         dict_size += 1;
         enlarge_in -= 1;
