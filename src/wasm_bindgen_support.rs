@@ -12,13 +12,16 @@ pub fn compress(data: &str) -> Result<JsString, JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn decompress(data: JsString) -> Result<JsString, JsValue> {
+pub fn decompress(data: JsString) -> JsValue {
     // Returning a String crashes?
     let data: Vec<u32> = data.iter().map(u32::from).collect();
-    let compressed = crate::decompress_str(&data).map_err(|e| e.to_string())?;
+    let decompressed = crate::decompress_str(&data)
+        .map(JsString::from)
+        .map(Into::into)
+        .unwrap_or(JsValue::NULL);
 
     // TODO: Lossless conversion
     // JsString::from_code_point(&compressed)
 
-    Ok(JsString::from(compressed))
+    decompressed
 }
