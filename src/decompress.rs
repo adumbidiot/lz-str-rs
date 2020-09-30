@@ -1,8 +1,5 @@
 use crate::constants::URI_KEY;
-use std::{
-    collections::HashMap,
-    convert::TryFrom,
-};
+use std::convert::TryFrom;
 
 #[derive(Debug)]
 pub enum DecompressError {
@@ -114,9 +111,9 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, De
         u32::try_from(bits_per_char).map_err(DecompressError::InvalidBitsPerChar)? - 1;
     let reset_val = 2_usize.pow(reset_val_pow);
     let mut ctx = DecompressContext::new(compressed, reset_val);
-    let mut dictionary: HashMap<u32, String> = HashMap::new();
+    let mut dictionary: Vec<String> = Vec::new();
     for i in 0_u8..3_u8 {
-        dictionary.insert(i as u32, (i as char).to_string());
+        dictionary.push(char::from(i).to_string());
     }
 
     let next = ctx.read_bits(2)?;
@@ -138,13 +135,13 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, De
     let mut dict_size = 4;
     let mut entry;
     loop {
-        let mut cc = ctx.read_bits(num_bits)?;
+        let mut cc = ctx.read_bits(num_bits)? as usize;
         match cc {
             0 | 1 => {
                 let bits_to_read = (cc * 8) + 8;
-                if cc == 0 {
-                    // if (errorCount++ > 10000) return "Error"; // TODO: Error logic
-                }
+                // if cc == 0 {
+                // if (errorCount++ > 10000) return "Error"; // TODO: Error logic
+                // }
 
                 let bits = ctx.read_bits(bits_to_read as usize)?;
                 let c = std::char::from_u32(bits).ok_or(DecompressError::InvalidChar(bits))?;
@@ -164,8 +161,8 @@ pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Result<String, De
             num_bits += 1;
         }
 
-        if dictionary.contains_key(&cc) {
-            entry = dictionary[&cc].clone();
+        if let Some(entry_value) = dictionary.get(cc as usize) {
+            entry = entry_value.clone();
         } else if cc == dict_size {
             entry = w.clone();
             entry.push(w.chars().next().ok_or(DecompressError::Invalid)?);
