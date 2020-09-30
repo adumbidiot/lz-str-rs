@@ -9,6 +9,6 @@ fn invalid_decompress_str() {
 
     for data in invalid_data {
         let arr = str_to_u32_vec(data);
-        assert!(decompress_str(&arr).is_err());
+        assert!(decompress_str(&arr).is_none());
     }
 }

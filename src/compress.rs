@@ -21,6 +21,7 @@ pub(crate) struct CompressContext<F: Fn(u32) -> u32> {
 }
 
 impl<F: Fn(u32) -> u32> CompressContext<F> {
+    #[inline]
     pub fn new(bits_per_char: usize, to_char: F) -> Self {
         CompressContext {
             dictionary: HashMap::new(),
@@ -39,6 +40,7 @@ impl<F: Fn(u32) -> u32> CompressContext<F> {
         }
     }
 
+    #[inline]
     pub fn produce_w(&mut self) {
         if self.dictionary_to_create.contains_key(&self.w) {
             let first_w_char = self.w.chars().next().unwrap() as u32;
@@ -57,6 +59,7 @@ impl<F: Fn(u32) -> u32> CompressContext<F> {
         self.decrement_enlarge_in();
     }
 
+    #[inline]
     pub fn write_bit(&mut self, value: u32) {
         self.val = (self.val << 1) | value;
         if self.position == self.bits_per_char - 1 {
@@ -69,6 +72,7 @@ impl<F: Fn(u32) -> u32> CompressContext<F> {
         }
     }
 
+    #[inline]
     pub fn write_bits(&mut self, n: usize, mut value: u32) {
         //if (typeof(value)=="string")
         //	value = value.charCodeAt(0);
@@ -78,6 +82,7 @@ impl<F: Fn(u32) -> u32> CompressContext<F> {
         }
     }
 
+    #[inline]
     pub fn decrement_enlarge_in(&mut self) {
         self.enlarge_in -= 1;
         if self.enlarge_in == 0 {
@@ -87,16 +92,19 @@ impl<F: Fn(u32) -> u32> CompressContext<F> {
     }
 }
 
+#[inline]
 pub fn compress_str(input: &str) -> Vec<u32> {
     compress(input, 16, |n| n)
 }
 
+#[inline]
 pub fn compress_uri(data: &str) -> Vec<u32> {
     compress(&data, 6, |n| {
         u32::from(URI_KEY.chars().nth(n as usize).unwrap())
     })
 }
 
+#[inline]
 pub fn compress<F: Fn(u32) -> u32>(
     uncompressed: &str,
     bits_per_char: usize,
