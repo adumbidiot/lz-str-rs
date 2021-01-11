@@ -1,4 +1,11 @@
-use lz_string::{compress_str, compress_uri, decompress_str, decompress_uri, str_to_u32_vec, compress_to_utf16};
+use lz_string::{
+    compress_str,
+    compress_to_utf16,
+    compress_uri,
+    decompress_str,
+    decompress_uri,
+    str_to_u32_vec,
+};
 
 const RED_STR: &str = "red";
 
