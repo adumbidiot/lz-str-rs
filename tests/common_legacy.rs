@@ -1,10 +1,4 @@
-use lz_string::{
-    compress_str,
-    compress_uri,
-    decompress_str,
-    decompress_uri,
-    str_to_u32_vec,
-};
+use lz_string::{compress_str, compress_uri, decompress_str, decompress_uri, str_to_u32_vec, compress_to_utf16};
 
 const RED_STR: &str = "red";
 
@@ -27,6 +21,12 @@ pub fn round_red() {
 pub fn compress_red() {
     let compressed = compress_str(&RED_STR);
     assert_eq!(str_to_u32_vec("ᎅ〦䀀"), compressed);
+}
+
+#[test]
+pub fn compress_red_to_utf16() {
+    let compressed = compress_to_utf16(&RED_STR);
+    assert_eq!("\u{9e2}䰩䠠".to_string(), compressed);
 }
 
 #[test]

@@ -98,6 +98,12 @@ pub fn compress_str(input: &str) -> Vec<u32> {
 }
 
 #[inline]
+pub fn compress_to_utf16(input: &str) -> String {
+    let buf = compress(input, 15, |n| { n + 32 });
+    buf.iter().map(|i| char::from_u32(*i).unwrap()).collect()
+}
+
+#[inline]
 pub fn compress_uri(data: &str) -> Vec<u32> {
     compress(&data, 6, |n| {
         u32::from(URI_KEY.chars().nth(n as usize).unwrap())

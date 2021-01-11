@@ -1,3 +1,4 @@
+#![feature(assoc_char_funcs)]
 #![forbid(unsafe_code)]
 
 mod compress;
@@ -11,6 +12,7 @@ pub use crate::{
         compress,
         compress_str,
         compress_uri,
+        compress_to_utf16
     },
     decompress::{
         decompress,
