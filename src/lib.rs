@@ -1,4 +1,3 @@
-#![feature(assoc_char_funcs)]
 #![forbid(unsafe_code)]
 
 mod compress;
