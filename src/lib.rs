@@ -10,6 +10,7 @@ pub use crate::{
     compress::{
         compress,
         compress_str,
+        compress_to_utf16,
         compress_uri,
     },
     decompress::{
