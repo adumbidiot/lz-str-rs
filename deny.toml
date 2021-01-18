@@ -22,7 +22,10 @@ allow = [ "Apache-2.0", "MIT" ]
 exceptions = []
 
 [bans]
-multiple-versions = "deny"
+# This crate will have no dependencies in a release native build. 
+# It only needs dependencies for testing and wasm support.
+# Set this to warn only to lessen noise.
+multiple-versions = "warn"
 highlight = "all"
 skip = []
 
