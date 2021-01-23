@@ -5,7 +5,7 @@ authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
 edition = "2018"
 description = "A port of lz-string to Rust"
 repository = "https://github.com/adumbidiot/lz-string-rs"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 
 [lib]
 crate-type = [ "cdylib", "rlib" ]
