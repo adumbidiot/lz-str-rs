@@ -1,4 +1,4 @@
-use lz_string::{
+use lz_str::{
     compress_str,
     decompress_str,
     str_to_u32_vec,
