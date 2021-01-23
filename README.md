@@ -1,4 +1,7 @@
 # lz-str-rs
+[![crates.io](https://img.shields.io/crates/v/lz-str.svg)](https://crates.io/crates/lz-str)
+[![Documentation](https://docs.rs/lz-str/badge.svg)](https://docs.rs/lz-str)
+[![MIT/Apache-2 licensed](https://img.shields.io/crates/l/lz-str.svg)](./LICENSE-APACHE)
 ![Rust](https://github.com/adumbidiot/lz-str-rs/workflows/Rust/badge.svg)
 
 A port of [lz-string](https://github.com/pieroxy/lz-string) to Rust. 
@@ -9,7 +12,7 @@ Add the following to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-lz-str = { git = "https://github.com/adumbidiot/lz-str-rs" }
+lz-str = "0.1.0"
 ```
 
 ## Getting Started
