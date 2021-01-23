@@ -1,4 +1,4 @@
-# lz-string-rs
+# lz-str-rs
 ![Rust](https://github.com/adumbidiot/lz-str-rs/workflows/Rust/badge.svg)
 
 A port of [lz-string](https://github.com/pieroxy/lz-string) to Rust. 

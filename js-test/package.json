@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/adumbidiot/lz-string-rs.git"
+    "url": "git+https://github.com/adumbidiot/lz-str-rs.git"
   },
   "keywords": [
     "test"
@@ -16,9 +16,9 @@
   "author": "adumbidiot",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/adumbidiot/lz-string-rs/issues"
+    "url": "https://github.com/adumbidiot/lz-str-rs/issues"
   },
-  "homepage": "https://github.com/adumbidiot/lz-string-rs#readme",
+  "homepage": "https://github.com/adumbidiot/lz-str-rs#readme",
   "dependencies": {
     "lz-string-js": "npm:lz-string@^1.4.4",
     "lz-string": "file:../pkg",
