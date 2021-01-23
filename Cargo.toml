@@ -4,8 +4,12 @@ version = "0.1.0"
 authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
 edition = "2018"
 description = "A port of lz-string to Rust"
-repository = "https://github.com/adumbidiot/lz-string-rs"
+repository = "https://github.com/adumbidiot/lz-str-rs"
+homepage = "https://github.com/adumbidiot/lz-str-rs"
 license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = [ "lz-string", "compression" ]
+categories = [ "compression" ]
 
 [lib]
 crate-type = [ "cdylib", "rlib" ]
