@@ -16,7 +16,6 @@ pub struct DecompressContext<'a> {
 impl<'a> DecompressContext<'a> {
     #[inline]
     pub fn new(compressed_data: &'a [u32], reset_val: usize) -> Self {
-        // compressed_data.push(0 as char); // Js version seems to rely on being able to load a nonexistent byte, so just pad it here...? Maybe a bug in my impl?
         DecompressContext {
             val: compressed_data[0],
             compressed_data,

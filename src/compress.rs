@@ -143,8 +143,12 @@ pub fn compress_to_base64(data: &str) -> String {
         )
     });
 
-    for _ in 0..(compressed.len() % 4) {
-        compressed.push(u32::from('='));
+    let mod_4 = compressed.len() % 4;
+
+    if mod_4 != 0 {
+        for _ in mod_4..(4 + 1) {
+            compressed.push(u32::from('='));
+        }
     }
 
     compressed
