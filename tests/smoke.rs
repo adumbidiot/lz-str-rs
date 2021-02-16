@@ -28,7 +28,7 @@ pub fn round_test_uri() {
 }
 
 #[test]
-pub fn round_red() {
+pub fn round_test() {
     let compressed = compress_str(&TEST_STR);
     let decompressed = decompress_str(&compressed).unwrap();
     assert_eq!(TEST_STR, decompressed);
@@ -43,7 +43,7 @@ pub fn compress_test() {
 #[test]
 pub fn compress_test_to_utf16() {
     let compressed = compress_to_utf16(&TEST_STR);
-    assert_eq!("ՠⱉ䀨ऀ圤堸悋Ф〳䄖Ϙށ䰠硠૦Ö<͘ⓠ᮸瑀̎Ƞ㘢ఢ砤硠Ŕ怮㈠", compressed);
+    assert_eq!("ՠⱉ䀨ऀ圤堸悋Ф〳䄖Ϙށ䰠硠૦Ö<͘ⓠ᮸瑀̎Ƞ㘢ఢ砤硠Ŕ怮㈠ ", compressed);
 }
 
 #[test]

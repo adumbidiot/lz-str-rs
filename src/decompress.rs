@@ -69,13 +69,20 @@ pub fn decompress_from_utf16(compressed: &str) -> Option<String> {
 
 #[inline]
 pub fn decompress_uri(compressed: &[u32]) -> Option<String> {
-    // let compressed = compressed.replace(" ", "+"); //Is this even necessary?
     let compressed: Option<Vec<u32>> = compressed
         .iter()
+        .copied()
+        .map(|c| {
+            if c == u32::from(b' ') {
+                u32::from(b'+')
+            } else {
+                c
+            }
+        })
         .map(|c| {
             URI_KEY
                 .bytes()
-                .position(|k| u8::try_from(*c) == Ok(k))
+                .position(|k| u8::try_from(c) == Ok(k))
                 .map(|n| u32::try_from(n).ok())
         })
         .flatten()

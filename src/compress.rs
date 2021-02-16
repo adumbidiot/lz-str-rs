@@ -74,9 +74,7 @@ impl<F: Fn(u32) -> u32> CompressContext<F> {
 
     #[inline]
     pub fn write_bits(&mut self, n: usize, mut value: u32) {
-        //if (typeof(value)=="string")
-        //	value = value.charCodeAt(0);
-        for _i in 0..n {
+        for _ in 0..n {
             self.write_bit(value & 1);
             value >>= 1;
         }
@@ -102,8 +100,9 @@ pub fn compress_str(input: &str) -> Vec<u32> {
 #[inline]
 pub fn compress_to_utf16(input: &str) -> String {
     let buf = compress(input, 15, |n| n + 32);
-    buf.iter()
-        .map(|i| std::char::from_u32(*i).expect("`compress_to_utf16 output was not valid unicode`"))
+    buf.into_iter()
+        .map(|i| std::char::from_u32(i).expect("`compress_to_utf16 output was not valid unicode`"))
+        .chain(std::iter::once(' '))
         .collect()
 }
 
