@@ -6,7 +6,7 @@ pub fn compress(data: &str) -> Result<JsString, JsValue> {
     // TODO: Lossless conversion
     // let data: Vec<u32> = data.iter().map(u32::from).collect();
 
-    let compressed = crate::compress_str(&data);
+    let compressed = crate::compress(&data);
 
     JsString::from_code_point(&compressed)
 }
@@ -15,13 +15,11 @@ pub fn compress(data: &str) -> Result<JsString, JsValue> {
 pub fn decompress(data: JsString) -> JsValue {
     // Returning a String crashes?
     let data: Vec<u32> = data.iter().map(u32::from).collect();
-    let decompressed = crate::decompress_str(&data)
+    crate::decompress(&data)
         .map(JsString::from)
         .map(Into::into)
-        .unwrap_or(JsValue::NULL);
+        .unwrap_or(JsValue::NULL)
 
     // TODO: Lossless conversion
     // JsString::from_code_point(&compressed)
-
-    decompressed
 }

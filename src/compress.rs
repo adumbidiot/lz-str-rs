@@ -90,31 +90,50 @@ impl<F: Fn(u32) -> u32> CompressContext<F> {
     }
 }
 
+/// Compress a [`&str`] into a [`Vec`] of [`u32`]s, which represent possibly invalid UTF16.
+///
 #[inline]
-pub fn compress_str(input: &str) -> Vec<u32> {
-    compress(input, 16, |n| n)
+pub fn compress(input: &str) -> Vec<u32> {
+    compress_internal(input, 16, |n| n)
 }
 
 /// Compress a [`&str`] as a valid [`String`].
 ///
 #[inline]
 pub fn compress_to_utf16(input: &str) -> String {
-    let buf = compress(input, 15, |n| n + 32);
+    let buf = compress_internal(input, 15, |n| n + 32);
     buf.into_iter()
         .map(|i| std::char::from_u32(i).expect("`compress_to_utf16 output was not valid unicode`"))
         .chain(std::iter::once(' '))
         .collect()
 }
 
+/// Compress a [`&str`] into a [`String`], which can be safely used in a uri.
+///
 #[inline]
-pub fn compress_uri(data: &str) -> Vec<u32> {
-    compress(&data, 6, |n| {
-        u32::from(URI_KEY.chars().nth(n as usize).unwrap())
+pub fn compress_to_encoded_uri_component(data: &str) -> String {
+    compress_internal(&data, 6, |n| {
+        u32::from(
+            URI_KEY
+                .chars()
+                .nth(n as usize)
+                .expect("Invalid index into `URI_KEY` in `compress_uri`"),
+        )
     })
+    .into_iter()
+    .map(|c| {
+        std::char::from_u32(c)
+            .expect("`compressToEncodedURIComponent` output was not valid unicode`")
+    })
+    .collect()
 }
 
+/// The internal function for compressing data.
+/// All other compression functions are built on top of this.
+/// It generally should not be used directly.
+///
 #[inline]
-pub fn compress<F: Fn(u32) -> u32>(
+pub fn compress_internal<F: Fn(u32) -> u32>(
     uncompressed: &str,
     bits_per_char: usize,
     to_char: F,

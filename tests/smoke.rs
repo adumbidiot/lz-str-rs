@@ -1,11 +1,10 @@
 use lz_str::{
-    compress_str,
+    compress,
+    compress_to_encoded_uri_component,
     compress_to_utf16,
-    compress_uri,
+    decompress,
+    decompress_from_encoded_uri_component,
     decompress_from_utf16,
-    decompress_str,
-    decompress_uri,
-    str_to_u32_vec,
 };
 
 const TEST_STR: &str = "The quick brown fox jumps over the lazy dog";
@@ -16,27 +15,26 @@ const TEST_STR_COMPRESSED: &[u32] = &[
 
 #[test]
 pub fn round_test_uri() {
-    let compressed = compress_uri(&TEST_STR);
+    let compressed = compress_to_encoded_uri_component(&TEST_STR);
     assert_eq!(
         &compressed,
-        &str_to_u32_vec(
-            "CoCwpgBAjgrglgYwNYQEYCcD2B3AdhAM0wA8IArGAWwAcBnCTANzHQgBdwIAbAQwC8AnhAAmmAOZA"
-        )
+        "CoCwpgBAjgrglgYwNYQEYCcD2B3AdhAM0wA8IArGAWwAcBnCTANzHQgBdwIAbAQwC8AnhAAmmAOZA"
     );
-    let decompressed = decompress_uri(&compressed).expect("`round_test_uri` valid decompress");
+    let decompressed = decompress_from_encoded_uri_component(&compressed)
+        .expect("`round_test_uri` valid decompress");
     assert_eq!(TEST_STR, decompressed);
 }
 
 #[test]
 pub fn round_test() {
-    let compressed = compress_str(&TEST_STR);
-    let decompressed = decompress_str(&compressed).unwrap();
+    let compressed = compress(&TEST_STR);
+    let decompressed = decompress(&compressed).unwrap();
     assert_eq!(TEST_STR, decompressed);
 }
 
 #[test]
 pub fn compress_test() {
-    let compressed = compress_str(&TEST_STR);
+    let compressed = compress(&TEST_STR);
     assert_eq!(TEST_STR_COMPRESSED, compressed);
 }
 
@@ -56,12 +54,12 @@ pub fn decompress_test_to_utf16() {
 #[test]
 pub fn compress_repeat() {
     let data = "aaaaabaaaaacaaaaadaaaaaeaaaaa";
-    let compressed = compress_uri(&data);
-    assert_eq!(&compressed, &str_to_u32_vec("IYkI1EGNOATWBTWQ"));
+    let compressed = compress_to_encoded_uri_component(&data);
+    assert_eq!(&compressed, "IYkI1EGNOATWBTWQ");
 }
 
 #[test]
 pub fn decompress_test() {
-    let decompressed = decompress_str(TEST_STR_COMPRESSED).unwrap();
+    let decompressed = decompress(TEST_STR_COMPRESSED).expect("Valid Decompress");
     assert_eq!(TEST_STR, decompressed);
 }

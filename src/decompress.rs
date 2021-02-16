@@ -51,9 +51,14 @@ impl<'a> DecompressContext<'a> {
     }
 }
 
+/// Decompress a [`u32`] into a [`String`]. The slice represents possibly invalid UTF16.
+///
+/// # Errors
+/// Returns `None` if the decompression fails.
+///
 #[inline]
-pub fn decompress_str(compressed: &[u32]) -> Option<String> {
-    decompress(&compressed, 16)
+pub fn decompress(compressed: &[u32]) -> Option<String> {
+    decompress_internal(compressed, 16)
 }
 
 /// Decompress a [`&str`] compressed with [`crate::compress_to_utf16`].
@@ -64,21 +69,20 @@ pub fn decompress_str(compressed: &[u32]) -> Option<String> {
 #[inline]
 pub fn decompress_from_utf16(compressed: &str) -> Option<String> {
     let compressed: Vec<u32> = compressed.chars().map(|c| u32::from(c) - 32).collect();
-    decompress(&compressed, 15)
+    decompress_internal(&compressed, 15)
 }
 
+/// Decompress a [`&str`] compressed with [`crate::compress_to_utf16`].
+///
+/// # Errors
+/// Returns an error if the compressed data could not be decompressed.
+///
 #[inline]
-pub fn decompress_uri(compressed: &[u32]) -> Option<String> {
+pub fn decompress_from_encoded_uri_component(compressed: &str) -> Option<String> {
     let compressed: Option<Vec<u32>> = compressed
-        .iter()
-        .copied()
-        .map(|c| {
-            if c == u32::from(b' ') {
-                u32::from(b'+')
-            } else {
-                c
-            }
-        })
+        .chars()
+        .map(|c| if c == ' ' { '+' } else { c })
+        .map(u32::from)
         .map(|c| {
             URI_KEY
                 .bytes()
@@ -87,17 +91,20 @@ pub fn decompress_uri(compressed: &[u32]) -> Option<String> {
         })
         .flatten()
         .collect();
-    decompress(&compressed?, 6)
+    decompress_internal(&compressed?, 6)
 }
 
-/// The inner decompress function. All other decompress functions are built on top of this one.
+/// The iternal decompress function. All other decompress functions are built on top of this one.
 /// It generally should not be used directly.
+///
+/// # Errors
+/// Returns an error if the compressed data could not be decompressed.
 ///
 /// # Panics
 /// Panics if `bits_per_char` is greater than the number of bits in a `u32`.
 ///
 #[inline]
-pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Option<String> {
+pub fn decompress_internal(compressed: &[u32], bits_per_char: usize) -> Option<String> {
     assert!(bits_per_char <= std::mem::size_of::<u32>() * 8);
 
     if compressed.is_empty() {

@@ -9,15 +9,15 @@ pub mod wasm_bindgen_support;
 pub use crate::{
     compress::{
         compress,
-        compress_str,
+        compress_internal,
+        compress_to_encoded_uri_component,
         compress_to_utf16,
-        compress_uri,
     },
     decompress::{
         decompress,
+        decompress_from_encoded_uri_component,
         decompress_from_utf16,
-        decompress_str,
-        decompress_uri,
+        decompress_internal,
     },
 };
 

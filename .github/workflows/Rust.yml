@@ -31,7 +31,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: '--tests --all -- -D warnings'
+          args: '--tests --all --all-features -- -D warnings'
   cargo-deny:
     runs-on: ubuntu-latest
     steps:
