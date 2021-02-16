@@ -97,11 +97,13 @@ pub fn compress_str(input: &str) -> Vec<u32> {
     compress(input, 16, |n| n)
 }
 
+/// Compress a [`&str`] as a valid [`String`].
+///
 #[inline]
 pub fn compress_to_utf16(input: &str) -> String {
     let buf = compress(input, 15, |n| n + 32);
     buf.iter()
-        .map(|i| std::char::from_u32(*i).unwrap())
+        .map(|i| std::char::from_u32(*i).expect("`compress_to_utf16 output was not valid unicode`"))
         .collect()
 }
 
