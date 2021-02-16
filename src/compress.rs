@@ -117,9 +117,8 @@ pub fn compress_to_utf16(input: &str) -> String {
 pub fn compress_to_encoded_uri_component(data: &str) -> String {
     compress_internal(data, 6, |n| {
         u32::from(
-            URI_KEY
-                .chars()
-                .nth(n as usize)
+            *URI_KEY
+                .get(n as usize)
                 .expect("Invalid index into `URI_KEY` in `compress_to_encoded_uri_component`"),
         )
     })
@@ -136,9 +135,8 @@ pub fn compress_to_encoded_uri_component(data: &str) -> String {
 pub fn compress_to_base64(data: &str) -> String {
     let mut compressed = compress_internal(data, 6, |n| {
         u32::from(
-            BASE64_KEY
-                .chars()
-                .nth(n as usize)
+            *BASE64_KEY
+                .get(n as usize)
                 .expect("Invalid index into `BASE64_KEY` in `compress_to_base64`"),
         )
     });

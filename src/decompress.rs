@@ -87,8 +87,8 @@ pub fn decompress_from_encoded_uri_component(compressed: &str) -> Option<String>
         .map(u32::from)
         .map(|c| {
             URI_KEY
-                .bytes()
-                .position(|k| u8::try_from(c) == Ok(k))
+                .iter()
+                .position(|k| u8::try_from(c) == Ok(*k))
                 .map(|n| u32::try_from(n).ok())
         })
         .flatten()
@@ -109,8 +109,8 @@ pub fn decompress_from_base64(compressed: &str) -> Option<String> {
         .map(u32::from)
         .map(|c| {
             BASE64_KEY
-                .bytes()
-                .position(|k| u8::try_from(c) == Ok(k))
+                .iter()
+                .position(|k| u8::try_from(c) == Ok(*k))
                 .map(|n| u32::try_from(n).ok())
         })
         .flatten()
