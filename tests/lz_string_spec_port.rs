@@ -359,7 +359,7 @@ impl PartialEq<str> for ByteString {
     fn eq(&self, other: &str) -> bool {
         other
             .chars()
-            .map(|c| u32::from(c))
+            .map(u32::from)
             .eq(self.0.iter().copied())
     }
 }
@@ -368,7 +368,7 @@ impl PartialEq<&str> for ByteString {
     fn eq(&self, other: &&str) -> bool {
         other
             .chars()
-            .map(|c| u32::from(c))
+            .map(u32::from)
             .eq(self.0.iter().copied())
     }
 }
