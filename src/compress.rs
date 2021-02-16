@@ -1,4 +1,7 @@
-use crate::constants::URI_KEY;
+use crate::constants::{
+    BASE64_KEY,
+    URI_KEY,
+};
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -112,20 +115,44 @@ pub fn compress_to_utf16(input: &str) -> String {
 ///
 #[inline]
 pub fn compress_to_encoded_uri_component(data: &str) -> String {
-    compress_internal(&data, 6, |n| {
+    compress_internal(data, 6, |n| {
         u32::from(
             URI_KEY
                 .chars()
                 .nth(n as usize)
-                .expect("Invalid index into `URI_KEY` in `compress_uri`"),
+                .expect("Invalid index into `URI_KEY` in `compress_to_encoded_uri_component`"),
         )
     })
     .into_iter()
     .map(|c| {
         std::char::from_u32(c)
-            .expect("`compressToEncodedURIComponent` output was not valid unicode`")
+            .expect("`compress_to_encoded_uri_component` output was not valid unicode`")
     })
     .collect()
+}
+
+/// Compress a [`&str`] into a [`String`], which is valid base64.
+///
+pub fn compress_to_base64(data: &str) -> String {
+    let mut compressed = compress_internal(data, 6, |n| {
+        u32::from(
+            BASE64_KEY
+                .chars()
+                .nth(n as usize)
+                .expect("Invalid index into `BASE64_KEY` in `compress_to_base64`"),
+        )
+    });
+
+    for _ in 0..(compressed.len() % 4) {
+        compressed.push(u32::from('='));
+    }
+
+    compressed
+        .into_iter()
+        .map(|c| {
+            std::char::from_u32(c).expect("`compress_to_base64` output was not valid unicode`")
+        })
+        .collect()
 }
 
 /// The internal function for compressing data.

@@ -1,4 +1,7 @@
-use crate::constants::URI_KEY;
+use crate::constants::{
+    BASE64_KEY,
+    URI_KEY,
+};
 use std::convert::TryFrom;
 
 #[derive(Debug)]
@@ -51,7 +54,7 @@ impl<'a> DecompressContext<'a> {
     }
 }
 
-/// Decompress a [`u32`] into a [`String`]. The slice represents possibly invalid UTF16.
+/// Decompress a [`u32`] slice into a [`String`]. The slice represents possibly invalid UTF16.
 ///
 /// # Errors
 /// Returns `None` if the decompression fails.
@@ -72,7 +75,7 @@ pub fn decompress_from_utf16(compressed: &str) -> Option<String> {
     decompress_internal(&compressed, 15)
 }
 
-/// Decompress a [`&str`] compressed with [`crate::compress_to_utf16`].
+/// Decompress a [`&str`] compressed with [`crate::compress_encoded_uri_component`].
 ///
 /// # Errors
 /// Returns an error if the compressed data could not be decompressed.
@@ -91,6 +94,29 @@ pub fn decompress_from_encoded_uri_component(compressed: &str) -> Option<String>
         })
         .flatten()
         .collect();
+
+    decompress_internal(&compressed?, 6)
+}
+
+/// Decompress a [`&str`] compressed with [`crate::compress_to_base64`].
+///
+/// # Errors
+/// Returns an error if the compressed data could not be decompressed.
+///
+#[inline]
+pub fn decompress_from_base64(compressed: &str) -> Option<String> {
+    let compressed: Option<Vec<u32>> = compressed
+        .chars()
+        .map(u32::from)
+        .map(|c| {
+            BASE64_KEY
+                .bytes()
+                .position(|k| u8::try_from(c) == Ok(k))
+                .map(|n| u32::try_from(n).ok())
+        })
+        .flatten()
+        .collect();
+
     decompress_internal(&compressed?, 6)
 }
 
