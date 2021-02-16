@@ -15,11 +15,15 @@ pub use crate::{
     },
     decompress::{
         decompress,
+        decompress_from_utf16,
         decompress_str,
         decompress_uri,
     },
 };
 
+/// A utility function for converting a [`&str`] into a [`Vec`] of [`u32`]s,
+/// where each [`u32`] is a valid [`char`].
+///
 pub fn str_to_u32_vec(buf: &str) -> Vec<u32> {
     buf.chars().map(u32::from).collect()
 }

@@ -56,6 +56,17 @@ pub fn decompress_str(compressed: &[u32]) -> Option<String> {
     decompress(&compressed, 16)
 }
 
+/// Decompress a [`&str`] compressed with [`crate::compress_to_utf16`].
+///
+/// # Errors
+/// Returns an error if the compressed data could not be decompressed.
+///
+#[inline]
+pub fn decompress_from_utf16(compressed: &str) -> Option<String> {
+    let compressed: Vec<u32> = compressed.chars().map(|c| u32::from(c) - 32).collect();
+    decompress(&compressed, 15)
+}
+
 #[inline]
 pub fn decompress_uri(compressed: &[u32]) -> Option<String> {
     // let compressed = compressed.replace(" ", "+"); //Is this even necessary?
@@ -72,8 +83,12 @@ pub fn decompress_uri(compressed: &[u32]) -> Option<String> {
     decompress(&compressed?, 6)
 }
 
+/// The inner decompress function. All other decompress functions are built on top of this one.
+/// It generally should not be used directly.
+///
 /// # Panics
 /// Panics if `bits_per_char` is greater than the number of bits in a `u32`.
+///
 #[inline]
 pub fn decompress(compressed: &[u32], bits_per_char: usize) -> Option<String> {
     assert!(bits_per_char <= std::mem::size_of::<u32>() * 8);
