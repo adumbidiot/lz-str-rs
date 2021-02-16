@@ -120,6 +120,21 @@ pub fn decompress_from_base64(compressed: &str) -> Option<String> {
     decompress_internal(&compressed?, 6)
 }
 
+/// Decompress a byte slice compressed with [`crate::compress_to_uint8_array`].
+///
+/// # Errors
+/// Returns an error if the compressed data could not be decompressed.
+///
+#[inline]
+pub fn decompress_from_uint8_array(compressed: &[u8]) -> Option<String> {
+    let mut buf = Vec::with_capacity(compressed.len() / 2);
+    for i in 0..(compressed.len() / 2) {
+        buf.push(u32::from(compressed[i * 2]) * 256 + u32::from(compressed[i * 2 + 1]));
+    }
+
+    decompress(&buf)
+}
+
 /// The iternal decompress function. All other decompress functions are built on top of this one.
 /// It generally should not be used directly.
 ///

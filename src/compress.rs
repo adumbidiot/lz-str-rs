@@ -155,6 +155,21 @@ pub fn compress_to_base64(data: &str) -> String {
         .collect()
 }
 
+/// Compress a [`&str`] into a [`Vec`] of [`u8`].
+///
+pub fn compress_to_uint8_array(data: &str) -> Vec<u8> {
+    let compressed = compress(data);
+
+    let mut buf = Vec::with_capacity(compressed.len() * 2);
+
+    for val in compressed.into_iter() {
+        buf.push((val >> 8) as u8);
+        buf.push((val & 0xFF) as u8);
+    }
+
+    buf
+}
+
 /// The internal function for compressing data.
 /// All other compression functions are built on top of this.
 /// It generally should not be used directly.
