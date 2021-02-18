@@ -69,6 +69,7 @@ pub trait IntoWideIter {
 impl<'a> IntoWideIter for &'a str {
     type Iter = std::str::EncodeUtf16<'a>;
 
+    #[inline]
     fn into_wide_iter(self) -> Self::Iter {
         self.encode_utf16()
     }
@@ -77,6 +78,7 @@ impl<'a> IntoWideIter for &'a str {
 impl<'a> IntoWideIter for &&'a str {
     type Iter = std::str::EncodeUtf16<'a>;
 
+    #[inline]
     fn into_wide_iter(self) -> Self::Iter {
         self.encode_utf16()
     }
@@ -85,6 +87,7 @@ impl<'a> IntoWideIter for &&'a str {
 impl<'a> IntoWideIter for &'a [u16] {
     type Iter = std::iter::Copied<std::slice::Iter<'a, u16>>;
 
+    #[inline]
     fn into_wide_iter(self) -> Self::Iter {
         self.iter().copied()
     }
@@ -93,6 +96,7 @@ impl<'a> IntoWideIter for &'a [u16] {
 impl<'a> IntoWideIter for Vec<u16> {
     type Iter = std::vec::IntoIter<u16>;
 
+    #[inline]
     fn into_wide_iter(self) -> Self::Iter {
         self.into_iter()
     }
@@ -101,6 +105,7 @@ impl<'a> IntoWideIter for Vec<u16> {
 impl<'a> IntoWideIter for &'a Vec<u16> {
     type Iter = std::iter::Copied<std::slice::Iter<'a, u16>>;
 
+    #[inline]
     fn into_wide_iter(self) -> Self::Iter {
         self.iter().copied()
     }

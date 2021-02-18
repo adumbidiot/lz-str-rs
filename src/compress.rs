@@ -12,7 +12,7 @@ use std::collections::{
 };
 
 #[derive(Debug)]
-pub(crate) struct CompressContext<F: Fn(u16) -> u16> {
+pub(crate) struct CompressContext<F> {
     dictionary: HashMap<Vec<u16>, u16>,
     dictionary_to_create: HashSet<Vec<u16>>,
     wc: Vec<u16>,
@@ -30,7 +30,10 @@ pub(crate) struct CompressContext<F: Fn(u16) -> u16> {
     to_char: F,
 }
 
-impl<F: Fn(u16) -> u16> CompressContext<F> {
+impl<F> CompressContext<F>
+where
+    F: Fn(u16) -> u16,
+{
     #[inline]
     pub fn new(bits_per_char: usize, to_char: F) -> Self {
         CompressContext {
@@ -126,6 +129,7 @@ impl<F: Fn(u16) -> u16> CompressContext<F> {
 
     /// Finish the stream and get the final result.
     ///
+    #[inline]
     pub fn finish(mut self) -> Vec<u16> {
         // Output the code for w.
         if !self.w.is_empty() {

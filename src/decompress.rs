@@ -66,8 +66,8 @@ impl<I: Iterator<Item = u16>> DecompressContext<I> {
 /// Returns `None` if the decompression fails.
 ///
 #[inline]
-pub fn decompress(compressed: &[u16]) -> Option<Vec<u16>> {
-    decompress_internal(compressed.iter().copied(), 16)
+pub fn decompress(compressed: impl IntoWideIter) -> Option<Vec<u16>> {
+    decompress_internal(compressed.into_wide_iter(), 16)
 }
 
 /// Decompress a [`&str`] compressed with [`crate::compress_to_utf16`].
