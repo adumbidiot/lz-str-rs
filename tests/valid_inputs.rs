@@ -1,10 +1,7 @@
-use lz_str::{
-    decompress,
-    str_to_u32_vec,
-};
+use lz_str::decompress;
 
 #[test]
-fn decompress_red() {
-    let arr = str_to_u32_vec("red123");
+fn valid_decompress() {
+    let arr: Vec<u16> = "red123".encode_utf16().collect();
     assert_eq!(decompress(&arr).expect("Valid Decompress"), "\u{80}\u{80}");
 }

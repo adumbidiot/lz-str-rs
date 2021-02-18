@@ -6,8 +6,8 @@ use std::convert::TryFrom;
 
 #[derive(Debug)]
 pub struct DecompressContext<'a> {
-    val: u32,
-    compressed_data: &'a [u32],
+    val: u16,
+    compressed_data: &'a [u16],
     position: usize,
     index: usize,
     reset_val: usize,
@@ -15,7 +15,7 @@ pub struct DecompressContext<'a> {
 
 impl<'a> DecompressContext<'a> {
     #[inline]
-    pub fn new(compressed_data: &'a [u32], reset_val: usize) -> Self {
+    pub fn new(compressed_data: &'a [u16], reset_val: usize) -> Self {
         DecompressContext {
             val: compressed_data[0],
             compressed_data,
@@ -27,7 +27,7 @@ impl<'a> DecompressContext<'a> {
 
     #[inline]
     pub fn read_bit(&mut self) -> Option<bool> {
-        let res = self.val & (self.position as u32);
+        let res = self.val & (self.position as u16);
         self.position >>= 1;
 
         if self.position == 0 {
@@ -59,7 +59,7 @@ impl<'a> DecompressContext<'a> {
 /// Returns `None` if the decompression fails.
 ///
 #[inline]
-pub fn decompress(compressed: &[u32]) -> Option<String> {
+pub fn decompress(compressed: &[u16]) -> Option<String> {
     decompress_internal(compressed, 16)
 }
 
@@ -70,7 +70,7 @@ pub fn decompress(compressed: &[u32]) -> Option<String> {
 ///
 #[inline]
 pub fn decompress_from_utf16(compressed: &str) -> Option<String> {
-    let compressed: Vec<u32> = compressed.chars().map(|c| u32::from(c) - 32).collect();
+    let compressed: Vec<u16> = compressed.encode_utf16().map(|c| c - 32).collect();
     decompress_internal(&compressed, 15)
 }
 
@@ -81,15 +81,21 @@ pub fn decompress_from_utf16(compressed: &str) -> Option<String> {
 ///
 #[inline]
 pub fn decompress_from_encoded_uri_component(compressed: &str) -> Option<String> {
-    let compressed: Option<Vec<u32>> = compressed
-        .chars()
-        .map(|c| if c == ' ' { '+' } else { c })
+    let compressed: Option<Vec<u16>> = compressed
+        .encode_utf16()
+        .map(|c| {
+            if c == u16::from(b' ') {
+                u16::from(b'+')
+            } else {
+                c
+            }
+        })
         .map(u32::from)
         .map(|c| {
             URI_KEY
                 .iter()
                 .position(|k| u8::try_from(c) == Ok(*k))
-                .map(|n| u32::try_from(n).ok())
+                .map(|n| u16::try_from(n).ok())
         })
         .flatten()
         .collect();
@@ -104,14 +110,13 @@ pub fn decompress_from_encoded_uri_component(compressed: &str) -> Option<String>
 ///
 #[inline]
 pub fn decompress_from_base64(compressed: &str) -> Option<String> {
-    let compressed: Option<Vec<u32>> = compressed
-        .chars()
-        .map(u32::from)
+    let compressed: Option<Vec<u16>> = compressed
+        .encode_utf16()
         .map(|c| {
             BASE64_KEY
                 .iter()
                 .position(|k| u8::try_from(c) == Ok(*k))
-                .map(|n| u32::try_from(n).ok())
+                .map(|n| u16::try_from(n).ok())
         })
         .flatten()
         .collect();
@@ -128,7 +133,7 @@ pub fn decompress_from_base64(compressed: &str) -> Option<String> {
 pub fn decompress_from_uint8_array(compressed: &[u8]) -> Option<String> {
     let mut buf = Vec::with_capacity(compressed.len() / 2);
     for i in 0..(compressed.len() / 2) {
-        buf.push(u32::from(compressed[i * 2]) * 256 + u32::from(compressed[i * 2 + 1]));
+        buf.push(u16::from(compressed[i * 2]) * 256 + u16::from(compressed[i * 2 + 1]));
     }
 
     decompress(&buf)
@@ -141,11 +146,11 @@ pub fn decompress_from_uint8_array(compressed: &[u8]) -> Option<String> {
 /// Returns an error if the compressed data could not be decompressed.
 ///
 /// # Panics
-/// Panics if `bits_per_char` is greater than the number of bits in a `u32`.
+/// Panics if `bits_per_char` is greater than the number of bits in a `u16`.
 ///
 #[inline]
-pub fn decompress_internal(compressed: &[u32], bits_per_char: usize) -> Option<String> {
-    assert!(bits_per_char <= std::mem::size_of::<u32>() * 8);
+pub fn decompress_internal(compressed: &[u16], bits_per_char: usize) -> Option<String> {
+    assert!(bits_per_char <= std::mem::size_of::<u16>() * 8);
 
     if compressed.is_empty() {
         return Some(String::new());
@@ -154,7 +159,7 @@ pub fn decompress_internal(compressed: &[u32], bits_per_char: usize) -> Option<S
     let reset_val_pow = u32::try_from(bits_per_char).ok()? - 1;
     let reset_val = 2_usize.pow(reset_val_pow);
     let mut ctx = DecompressContext::new(compressed, reset_val);
-    let mut dictionary: Vec<String> = Vec::new();
+    let mut dictionary: Vec<String> = Vec::with_capacity(3);
     for i in 0_u8..3_u8 {
         dictionary.push(char::from(i).to_string());
     }
@@ -188,7 +193,8 @@ pub fn decompress_internal(compressed: &[u32], bits_per_char: usize) -> Option<S
 
                 let bits = ctx.read_bits(bits_to_read as usize)?;
                 let c = std::char::from_u32(bits)?;
-                dictionary.insert(dict_size, c.to_string());
+                // dictionary.insert(dict_size, c.to_string());
+                dictionary.push(c.to_string());
                 dict_size += 1;
                 cc = dict_size - 1;
                 enlarge_in -= 1;
@@ -218,7 +224,7 @@ pub fn decompress_internal(compressed: &[u32], bits_per_char: usize) -> Option<S
         // Add w+entry[0] to the dictionary.
         let mut to_be_inserted = w.clone();
         to_be_inserted.push(entry.chars().next()?);
-        dictionary.insert(dict_size, to_be_inserted);
+        dictionary.push(to_be_inserted);
         dict_size += 1;
         enlarge_in -= 1;
 

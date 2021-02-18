@@ -8,7 +8,7 @@ use lz_str::{
 };
 
 const TEST_STR: &str = "The quick brown fox jumps over the lazy dog";
-const TEST_STR_COMPRESSED: &[u32] = &[
+const TEST_STR_COMPRESSED: &[u16] = &[
     2688, 45222, 64, 36362, 57494, 1584, 13700, 1120, 9987, 55325, 49270, 4108, 54016, 15392, 2758,
     364, 112, 6594, 19459, 29469, 2049, 30466, 108, 1072, 3008, 10116, 38, 38915, 39168,
 ];

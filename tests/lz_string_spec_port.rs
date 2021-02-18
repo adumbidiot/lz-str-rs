@@ -1,7 +1,10 @@
 //! These tests were ported from https://github.com/pieroxy/lz-string/blob/83d7b59ebef47edc4cf0527bc03179b86e064f23/tests/lz-string-spec.js
 
 use rand::Rng;
-use std::fmt::Write;
+use std::{
+    fmt::Write,
+    string::FromUtf16Error,
+};
 
 fn compression_tests<C, D>(compress: C, decompress: D, bytearray: bool)
 where
@@ -144,8 +147,8 @@ fn lz_string_uint8_array() {
         |s| {
             lz_str::compress_to_uint8_array(s)
                 .into_iter()
-                .map(u32::from)
-                .collect::<Vec<u32>>()
+                .map(u16::from)
+                .collect::<Vec<u16>>()
                 .into()
         },
         |s| {
@@ -371,16 +374,11 @@ fn binary_decoding_compatibility_tests_mandatory() {
     );
 }
 
-pub struct ByteString(Vec<u32>);
+pub struct ByteString(Vec<u16>);
 
 impl ByteString {
-    pub fn to_utf8_string(&self) -> Option<String> {
-        let mut ret = String::with_capacity(self.0.len());
-        for c in self.0.iter().copied() {
-            ret.push(std::char::from_u32(c)?);
-        }
-
-        Some(ret)
+    pub fn to_utf8_string(&self) -> Result<String, FromUtf16Error> {
+        String::from_utf16(&self.0)
     }
 
     pub fn len(&self) -> usize {
@@ -394,25 +392,25 @@ impl ByteString {
 
 impl From<&str> for ByteString {
     fn from(s: &str) -> ByteString {
-        ByteString(s.chars().map(u32::from).collect())
+        ByteString(s.encode_utf16().collect())
     }
 }
 
 impl From<String> for ByteString {
     fn from(s: String) -> ByteString {
-        ByteString(s.chars().map(u32::from).collect())
+        ByteString(s.encode_utf16().collect())
     }
 }
 
-impl From<Vec<u32>> for ByteString {
-    fn from(data: Vec<u32>) -> ByteString {
+impl From<Vec<u16>> for ByteString {
+    fn from(data: Vec<u16>) -> ByteString {
         ByteString(data)
     }
 }
 
 impl std::fmt::Debug for ByteString {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        for c in self.0.iter().copied().map(std::char::from_u32) {
+        for c in std::char::decode_utf16(self.0.iter().copied()) {
             c.unwrap_or(std::char::REPLACEMENT_CHARACTER).fmt(f)?;
         }
 
@@ -422,12 +420,12 @@ impl std::fmt::Debug for ByteString {
 
 impl PartialEq<str> for ByteString {
     fn eq(&self, other: &str) -> bool {
-        other.chars().map(u32::from).eq(self.0.iter().copied())
+        other.encode_utf16().eq(self.0.iter().copied())
     }
 }
 
 impl PartialEq<&str> for ByteString {
     fn eq(&self, other: &&str) -> bool {
-        other.chars().map(u32::from).eq(self.0.iter().copied())
+        other.encode_utf16().eq(self.0.iter().copied())
     }
 }
