@@ -15,32 +15,33 @@ const TEST_STR_COMPRESSED: &[u16] = &[
 
 #[test]
 pub fn round_test_uri() {
-    let compressed = compress_to_encoded_uri_component(&TEST_STR);
+    let compressed =
+        compress_to_encoded_uri_component(&TEST_STR.encode_utf16().collect::<Vec<u16>>());
     assert_eq!(
         &compressed,
         "CoCwpgBAjgrglgYwNYQEYCcD2B3AdhAM0wA8IArGAWwAcBnCTANzHQgBdwIAbAQwC8AnhAAmmAOZA"
     );
     let decompressed = decompress_from_encoded_uri_component(&compressed)
         .expect("`round_test_uri` valid decompress");
-    assert_eq!(TEST_STR, decompressed);
+    assert_eq!(TEST_STR.encode_utf16().collect::<Vec<u16>>(), decompressed);
 }
 
 #[test]
 pub fn round_test() {
-    let compressed = compress(&TEST_STR);
+    let compressed = compress(&TEST_STR.encode_utf16().collect::<Vec<u16>>());
     let decompressed = decompress(&compressed).unwrap();
-    assert_eq!(TEST_STR, decompressed);
+    assert_eq!(TEST_STR.encode_utf16().collect::<Vec<u16>>(), decompressed);
 }
 
 #[test]
 pub fn compress_test() {
-    let compressed = compress(&TEST_STR);
+    let compressed = compress(&TEST_STR.encode_utf16().collect::<Vec<u16>>());
     assert_eq!(TEST_STR_COMPRESSED, compressed);
 }
 
 #[test]
 pub fn compress_test_to_utf16() {
-    let compressed = compress_to_utf16(&TEST_STR);
+    let compressed = compress_to_utf16(&TEST_STR.encode_utf16().collect::<Vec<u16>>());
     assert_eq!("ՠⱉ䀨ऀ圤堸悋Ф〳䄖Ϙށ䰠硠૦Ö<͘ⓠ᮸瑀̎Ƞ㘢ఢ砤硠Ŕ怮㈠ ", compressed);
 }
 
@@ -48,18 +49,18 @@ pub fn compress_test_to_utf16() {
 pub fn decompress_test_to_utf16() {
     let decompressed = decompress_from_utf16("ՠⱉ䀨ऀ圤堸悋Ф〳䄖Ϙށ䰠硠૦Ö<͘ⓠ᮸瑀̎Ƞ㘢ఢ砤硠Ŕ怮㈠ ")
         .expect("Valid Decompress");
-    assert_eq!(TEST_STR, decompressed);
+    assert_eq!(TEST_STR.encode_utf16().collect::<Vec<u16>>(), decompressed);
 }
 
 #[test]
 pub fn compress_repeat() {
     let data = "aaaaabaaaaacaaaaadaaaaaeaaaaa";
-    let compressed = compress_to_encoded_uri_component(&data);
+    let compressed = compress_to_encoded_uri_component(&data.encode_utf16().collect::<Vec<u16>>());
     assert_eq!(&compressed, "IYkI1EGNOATWBTWQ");
 }
 
 #[test]
 pub fn decompress_test() {
     let decompressed = decompress(TEST_STR_COMPRESSED).expect("Valid Decompress");
-    assert_eq!(TEST_STR, decompressed);
+    assert_eq!(TEST_STR.encode_utf16().collect::<Vec<u16>>(), decompressed);
 }

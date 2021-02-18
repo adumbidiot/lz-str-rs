@@ -96,18 +96,18 @@ impl<F: Fn(u16) -> u16> CompressContext<F> {
     }
 }
 
-/// Compress a [`&str`] into a [`Vec`] of [`u32`]s, which represent possibly invalid UTF16.
+/// Compress a [`&[u16]`] into a [`Vec<u16>`], which represent possibly invalid UTF16.
 ///
 #[inline]
-pub fn compress(input: &str) -> Vec<u16> {
-    compress_internal(input.encode_utf16(), 16, |n| n)
+pub fn compress(input: &[u16]) -> Vec<u16> {
+    compress_internal(input.iter().copied(), 16, |n| n)
 }
 
 /// Compress a [`&str`] as a valid [`String`].
 ///
 #[inline]
-pub fn compress_to_utf16(input: &str) -> String {
-    let compressed = compress_internal(input.encode_utf16(), 15, |n| n + 32);
+pub fn compress_to_utf16(input: &[u16]) -> String {
+    let compressed = compress_internal(input.iter().copied(), 15, |n| n + 32);
     let mut compressed =
         String::from_utf16(&compressed).expect("`compress_to_utf16 output was not valid unicode`");
     compressed.push(' ');
@@ -118,8 +118,8 @@ pub fn compress_to_utf16(input: &str) -> String {
 /// Compress a [`&str`] into a [`String`], which can be safely used in a uri.
 ///
 #[inline]
-pub fn compress_to_encoded_uri_component(data: &str) -> String {
-    let compressed = compress_internal(data.encode_utf16(), 6, |n| {
+pub fn compress_to_encoded_uri_component(data: &[u16]) -> String {
+    let compressed = compress_internal(data.iter().copied(), 6, |n| {
         u16::from(
             *URI_KEY
                 .get(n as usize)
@@ -133,8 +133,8 @@ pub fn compress_to_encoded_uri_component(data: &str) -> String {
 
 /// Compress a [`&str`] into a [`String`], which is valid base64.
 ///
-pub fn compress_to_base64(data: &str) -> String {
-    let mut compressed = compress_internal(data.encode_utf16(), 6, |n| {
+pub fn compress_to_base64(data: &[u16]) -> String {
+    let mut compressed = compress_internal(data.iter().copied(), 6, |n| {
         u16::from(
             *BASE64_KEY
                 .get(n as usize)
@@ -153,9 +153,9 @@ pub fn compress_to_base64(data: &str) -> String {
     String::from_utf16(&compressed).expect("`compress_to_base64` output was not valid unicode`")
 }
 
-/// Compress a [`&str`] into a [`Vec`] of [`u8`].
+/// Compress a [`&[u16]`] into a [`Vec`] of [`u8`].
 ///
-pub fn compress_to_uint8_array(data: &str) -> Vec<u8> {
+pub fn compress_to_uint8_array(data: &[u16]) -> Vec<u8> {
     let compressed = compress(data);
 
     let mut buf = Vec::with_capacity(compressed.len() * 2);
