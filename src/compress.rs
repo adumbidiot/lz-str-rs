@@ -1,6 +1,7 @@
 use crate::{
     constants::{
         BASE64_KEY,
+        CLOSE_CODE,
         URI_KEY,
     },
     IntoWideIter,
@@ -9,8 +10,6 @@ use std::collections::{
     HashMap,
     HashSet,
 };
-
-const CLOSE_CODE: u16 = 2;
 
 #[derive(Debug)]
 pub(crate) struct CompressContext<F: Fn(u16) -> u16> {

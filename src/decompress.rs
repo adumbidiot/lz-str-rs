@@ -1,28 +1,35 @@
-use crate::constants::{
-    BASE64_KEY,
-    URI_KEY,
+use crate::{
+    constants::{
+        BASE64_KEY,
+        CLOSE_CODE,
+        URI_KEY,
+    },
+    IntoWideIter,
 };
 use std::convert::TryFrom;
 
 #[derive(Debug)]
-pub struct DecompressContext<'a> {
+pub struct DecompressContext<I> {
     val: u16,
-    compressed_data: &'a [u16],
+    compressed_data: I,
     position: usize,
-    index: usize,
     reset_val: usize,
 }
 
-impl<'a> DecompressContext<'a> {
+impl<I: Iterator<Item = u16>> DecompressContext<I> {
+    /// Make a new [`DecompressContext`].
+    ///
+    /// # Errors
+    /// Returns `None` if the iterator is empty.
+    ///
     #[inline]
-    pub fn new(compressed_data: &'a [u16], reset_val: usize) -> Self {
-        DecompressContext {
-            val: compressed_data[0],
+    pub fn new(mut compressed_data: I, reset_val: usize) -> Option<Self> {
+        Some(DecompressContext {
+            val: compressed_data.next()?,
             compressed_data,
             position: reset_val,
-            index: 1,
             reset_val,
-        }
+        })
     }
 
     #[inline]
@@ -32,8 +39,7 @@ impl<'a> DecompressContext<'a> {
 
         if self.position == 0 {
             self.position = self.reset_val;
-            self.val = *self.compressed_data.get(self.index)?;
-            self.index += 1;
+            self.val = self.compressed_data.next()?;
         }
 
         Some(res != 0)
@@ -53,14 +59,15 @@ impl<'a> DecompressContext<'a> {
     }
 }
 
-/// Decompress a [`u32`] slice into a [`String`]. The slice represents possibly invalid UTF16.
+/// Decompress a string into a [`Vec<u16>`].
+/// The result contains possibly invalid UTF16.
 ///
 /// # Errors
 /// Returns `None` if the decompression fails.
 ///
 #[inline]
 pub fn decompress(compressed: &[u16]) -> Option<Vec<u16>> {
-    decompress_internal(compressed, 16)
+    decompress_internal(compressed.iter().copied(), 16)
 }
 
 /// Decompress a [`&str`] compressed with [`crate::compress_to_utf16`].
@@ -70,11 +77,10 @@ pub fn decompress(compressed: &[u16]) -> Option<Vec<u16>> {
 ///
 #[inline]
 pub fn decompress_from_utf16(compressed: &str) -> Option<Vec<u16>> {
-    let compressed: Vec<u16> = compressed.encode_utf16().map(|c| c - 32).collect();
-    decompress_internal(&compressed, 15)
+    decompress_internal(compressed.encode_utf16().map(|c| c - 32), 15)
 }
 
-/// Decompress a [`&str`] compressed with [`crate::compress_encoded_uri_component`].
+/// Decompress a [`&str`] compressed with [`crate::compress_to_encoded_uri_component`].
 ///
 /// # Errors
 /// Returns an error if the compressed data could not be decompressed.
@@ -100,7 +106,7 @@ pub fn decompress_from_encoded_uri_component(compressed: &str) -> Option<Vec<u16
         .flatten()
         .collect();
 
-    decompress_internal(&compressed?, 6)
+    decompress_internal(compressed?.into_iter(), 6)
 }
 
 /// Decompress a [`&str`] compressed with [`crate::compress_to_base64`].
@@ -121,7 +127,7 @@ pub fn decompress_from_base64(compressed: &str) -> Option<Vec<u16>> {
         .flatten()
         .collect();
 
-    decompress_internal(&compressed?, 6)
+    decompress_internal(compressed?.into_iter(), 6)
 }
 
 /// Decompress a byte slice compressed with [`crate::compress_to_uint8_array`].
@@ -139,7 +145,9 @@ pub fn decompress_from_uint8_array(compressed: &[u8]) -> Option<Vec<u16>> {
     decompress(&buf)
 }
 
-/// The iternal decompress function. All other decompress functions are built on top of this one.
+/// The internal decompress function.
+///
+/// All other decompress functions are built on top of this one.
 /// It generally should not be used directly.
 ///
 /// # Errors
@@ -149,28 +157,31 @@ pub fn decompress_from_uint8_array(compressed: &[u8]) -> Option<Vec<u16>> {
 /// Panics if `bits_per_char` is greater than the number of bits in a `u16`.
 ///
 #[inline]
-pub fn decompress_internal(compressed: &[u16], bits_per_char: usize) -> Option<Vec<u16>> {
+pub fn decompress_internal<I>(compressed: I, bits_per_char: usize) -> Option<Vec<u16>>
+where
+    I: Iterator<Item = u16>,
+{
     assert!(bits_per_char <= std::mem::size_of::<u16>() * 8);
-
-    if compressed.is_empty() {
-        return Some(Vec::new());
-    }
 
     let reset_val_pow = u32::try_from(bits_per_char).ok()? - 1;
     let reset_val = 2_usize.pow(reset_val_pow);
-    let mut ctx = DecompressContext::new(compressed, reset_val);
+    let mut ctx = match DecompressContext::new(compressed, reset_val) {
+        Some(ctx) => ctx,
+        None => return Some(Vec::new()),
+    };
+
     let mut dictionary: Vec<Vec<u16>> = Vec::with_capacity(3);
     for i in 0_u16..3_u16 {
         dictionary.push(vec![i]);
     }
 
     let next = ctx.read_bits(2)?;
-    let first_entry: u16 = match next {
+    let first_entry: u16 = match next as u16 {
         0 | 1 => {
             let bits_to_read = (next * 8) + 8;
             ctx.read_bits(bits_to_read as usize)? as u16
         }
-        2 => return Some(Vec::new()),
+        CLOSE_CODE => return Some(Vec::new()),
         _ => return None,
     };
     dictionary.insert(3, vec![first_entry]);
@@ -183,7 +194,7 @@ pub fn decompress_internal(compressed: &[u16], bits_per_char: usize) -> Option<V
     let mut entry;
     loop {
         let mut cc = ctx.read_bits(num_bits)? as usize;
-        match cc {
+        match cc as u16 {
             0 | 1 => {
                 let bits_to_read = (cc * 8) + 8;
                 // if cc == 0 {
@@ -196,7 +207,7 @@ pub fn decompress_internal(compressed: &[u16], bits_per_char: usize) -> Option<V
                 cc = dict_size - 1;
                 enlarge_in -= 1;
             }
-            2 => return Some(result),
+            CLOSE_CODE => return Some(result),
             _ => {}
         }
 
