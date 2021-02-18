@@ -7,6 +7,8 @@ use std::collections::{
     HashSet,
 };
 
+const CLOSE_CODE: u16 = 2;
+
 #[derive(Debug)]
 pub(crate) struct CompressContext<F: Fn(u16) -> u16> {
     dictionary: HashMap<Vec<u16>, u16>,
@@ -30,7 +32,7 @@ impl<F: Fn(u16) -> u16> CompressContext<F> {
     #[inline]
     pub fn new(bits_per_char: usize, to_char: F) -> Self {
         CompressContext {
-            dictionary: HashMap::new(),
+            dictionary: Default::default(),
             dictionary_to_create: HashSet::new(),
             wc: Vec::new(),
             w: Vec::new(),
@@ -94,13 +96,58 @@ impl<F: Fn(u16) -> u16> CompressContext<F> {
             self.num_bits += 1;
         }
     }
+
+    /// Compress a `u16`. This represents a wide char.
+    ///
+    #[inline]
+    pub fn write_u16(&mut self, c: u16) {
+        let c = vec![c];
+        if !self.dictionary.contains_key(&c) {
+            self.dictionary.insert(c.clone(), self.dict_size as u16);
+            self.dict_size += 1;
+            self.dictionary_to_create.insert(c.clone());
+        }
+
+        self.wc = self.w.clone();
+        self.wc.extend(&c);
+        if self.dictionary.contains_key(&self.wc) {
+            self.w = std::mem::take(&mut self.wc);
+        } else {
+            self.produce_w();
+            // Add wc to the dictionary.
+            self.dictionary
+                .insert(self.wc.clone(), self.dict_size as u16);
+            self.dict_size += 1;
+            self.w = c;
+        }
+    }
+
+    /// Finish the stream and get the final result.
+    ///
+    pub fn finish(mut self) -> Vec<u16> {
+        // Output the code for w.
+        if !self.w.is_empty() {
+            self.produce_w();
+        }
+
+        // Mark the end of the stream
+        self.write_bits(self.num_bits, CLOSE_CODE);
+
+        let str_len = self.output.len();
+        // Flush the last char
+        while self.output.len() == str_len {
+            self.write_bit(0);
+        }
+
+        self.output
+    }
 }
 
 /// Compress a [`&[u16]`] into a [`Vec<u16>`], which represent possibly invalid UTF16.
 ///
 #[inline]
 pub fn compress(input: &[u16]) -> Vec<u16> {
-    compress_internal(input.iter().copied(), 16, |n| n)
+    compress_internal(input.iter().copied(), 16, std::convert::identity)
 }
 
 /// Compress a [`&str`] as a valid [`String`].
@@ -122,7 +169,7 @@ pub fn compress_to_encoded_uri_component(data: &[u16]) -> String {
     let compressed = compress_internal(data.iter().copied(), 6, |n| {
         u16::from(
             *URI_KEY
-                .get(n as usize)
+                .get(usize::from(n))
                 .expect("Invalid index into `URI_KEY` in `compress_to_encoded_uri_component`"),
         )
     });
@@ -137,7 +184,7 @@ pub fn compress_to_base64(data: &[u16]) -> String {
     let mut compressed = compress_internal(data.iter().copied(), 6, |n| {
         u16::from(
             *BASE64_KEY
-                .get(n as usize)
+                .get(usize::from(n))
                 .expect("Invalid index into `BASE64_KEY` in `compress_to_base64`"),
         )
     });
@@ -179,40 +226,6 @@ pub fn compress_internal<I: Iterator<Item = u16>, F: Fn(u16) -> u16>(
     to_char: F,
 ) -> Vec<u16> {
     let mut ctx = CompressContext::new(bits_per_char, to_char);
-    uncompressed.for_each(|c| {
-        let c_str = vec![c];
-        if !ctx.dictionary.contains_key(&c_str) {
-            ctx.dictionary.insert(c_str.clone(), ctx.dict_size as u16);
-            ctx.dict_size += 1;
-            ctx.dictionary_to_create.insert(c_str.clone());
-        }
-
-        ctx.wc = ctx.w.clone();
-        ctx.wc.extend(&c_str);
-        if ctx.dictionary.contains_key(&ctx.wc) {
-            ctx.w = ctx.wc.clone();
-        } else {
-            ctx.produce_w();
-            // Add wc to the dictionary.
-            ctx.dictionary.insert(ctx.wc.clone(), ctx.dict_size as u16);
-            ctx.dict_size += 1;
-            ctx.w = c_str;
-        }
-    });
-
-    // Output the code for w.
-    if !ctx.w.is_empty() {
-        ctx.produce_w();
-    }
-
-    // Mark the end of the stream
-    ctx.write_bits(ctx.num_bits, 2);
-
-    let str_len = ctx.output.len();
-    // Flush the last char
-    while ctx.output.len() == str_len {
-        ctx.write_bit(0);
-    }
-
-    ctx.output
+    uncompressed.for_each(|c| ctx.write_u16(c));
+    ctx.finish()
 }
