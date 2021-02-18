@@ -19,16 +19,16 @@ lz-str = "0.1.0"
 
 ```rust
 use lz_str::{
-    compress_str,
-    decompress_str,
+    compress,
+    decompress,
 };
 
 const DATA_STR: &'static str = "The quick brown fox jumps over the lazy dog";
 
 fn main(){
-    let compressed = compress_str(&DATA_STR);
-    let decompressed = decompress_str(&compressed).unwrap();
-    assert_eq!(DATA_STR, decompressed);
+    let compressed = compress(&DATA_STR);
+    let decompressed = decompress(&compressed).expect("Valid Decompress");
+    assert_eq!(DATA_STR, String::from_utf16(&decompressed).expect("Valid Unicode String"));
 }
 ```
 
