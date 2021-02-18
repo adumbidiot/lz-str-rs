@@ -2,14 +2,17 @@ use crate::constants::{
     BASE64_KEY,
     URI_KEY,
 };
-use std::collections::HashMap;
+use std::collections::{
+    HashMap,
+    HashSet,
+};
 
 #[derive(Debug)]
 pub(crate) struct CompressContext<F: Fn(u16) -> u16> {
     dictionary: HashMap<Vec<u16>, u16>,
-    dictionary_to_create: HashMap<Vec<u16>, bool>, // TODO: Hashset?
+    dictionary_to_create: HashSet<Vec<u16>>,
     wc: Vec<u16>,
-    w: Vec<u16>, // String,
+    w: Vec<u16>,
     enlarge_in: usize,
     dict_size: usize,
     num_bits: usize,
@@ -28,7 +31,7 @@ impl<F: Fn(u16) -> u16> CompressContext<F> {
     pub fn new(bits_per_char: usize, to_char: F) -> Self {
         CompressContext {
             dictionary: HashMap::new(),
-            dictionary_to_create: HashMap::new(),
+            dictionary_to_create: HashSet::new(),
             wc: Vec::new(),
             w: Vec::new(),
             enlarge_in: 2,
@@ -45,7 +48,7 @@ impl<F: Fn(u16) -> u16> CompressContext<F> {
 
     #[inline]
     pub fn produce_w(&mut self) {
-        if self.dictionary_to_create.contains_key(&self.w) {
+        if self.dictionary_to_create.contains(&self.w) {
             let first_w_char = self.w[0];
             if first_w_char < 256 {
                 self.write_bits(self.num_bits, 0);
@@ -177,11 +180,11 @@ pub fn compress_internal<I: Iterator<Item = u16>, F: Fn(u16) -> u16>(
 ) -> Vec<u16> {
     let mut ctx = CompressContext::new(bits_per_char, to_char);
     uncompressed.for_each(|c| {
-        let c_str = vec![c]; //c.to_string();
+        let c_str = vec![c];
         if !ctx.dictionary.contains_key(&c_str) {
             ctx.dictionary.insert(c_str.clone(), ctx.dict_size as u16);
             ctx.dict_size += 1;
-            ctx.dictionary_to_create.insert(c_str.clone(), true);
+            ctx.dictionary_to_create.insert(c_str.clone());
         }
 
         ctx.wc = ctx.w.clone();
