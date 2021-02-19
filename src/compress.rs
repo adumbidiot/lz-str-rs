@@ -1,37 +1,50 @@
-use crate::constants::URI_KEY;
-use std::collections::HashMap;
+use crate::{
+    constants::{
+        BASE64_KEY,
+        CLOSE_CODE,
+        URI_KEY,
+    },
+    IntoWideIter,
+};
+use std::collections::{
+    HashMap,
+    HashSet,
+};
 
 #[derive(Debug)]
-pub(crate) struct CompressContext<F: Fn(u32) -> u32> {
-    dictionary: HashMap<String, u32>,
-    dictionary_to_create: HashMap<String, bool>, // TODO: Hashset?
-    wc: String,
-    w: String,
+pub(crate) struct CompressContext<F> {
+    dictionary: HashMap<Vec<u16>, u16>,
+    dictionary_to_create: HashSet<Vec<u16>>,
+    wc: Vec<u16>,
+    w: Vec<u16>,
     enlarge_in: usize,
     dict_size: usize,
     num_bits: usize,
-    result: String,
+    result: Vec<u16>,
     // Data
-    output: Vec<u32>,
-    val: u32,
+    output: Vec<u16>,
+    val: u16,
     position: usize,
     // Limits
     bits_per_char: usize,
     to_char: F,
 }
 
-impl<F: Fn(u32) -> u32> CompressContext<F> {
+impl<F> CompressContext<F>
+where
+    F: Fn(u16) -> u16,
+{
     #[inline]
     pub fn new(bits_per_char: usize, to_char: F) -> Self {
         CompressContext {
-            dictionary: HashMap::new(),
-            dictionary_to_create: HashMap::new(),
-            wc: String::new(),
-            w: String::new(),
+            dictionary: Default::default(),
+            dictionary_to_create: HashSet::new(),
+            wc: Vec::new(),
+            w: Vec::new(),
             enlarge_in: 2,
             dict_size: 3,
             num_bits: 2,
-            result: String::new(),
+            result: Vec::new(),
             output: Vec::new(),
             val: 0,
             position: 0,
@@ -42,8 +55,8 @@ impl<F: Fn(u32) -> u32> CompressContext<F> {
 
     #[inline]
     pub fn produce_w(&mut self) {
-        if self.dictionary_to_create.contains_key(&self.w) {
-            let first_w_char = self.w.chars().next().unwrap() as u32;
+        if self.dictionary_to_create.contains(&self.w) {
+            let first_w_char = self.w[0];
             if first_w_char < 256 {
                 self.write_bits(self.num_bits, 0);
                 self.write_bits(8, first_w_char);
@@ -60,7 +73,7 @@ impl<F: Fn(u32) -> u32> CompressContext<F> {
     }
 
     #[inline]
-    pub fn write_bit(&mut self, value: u32) {
+    pub fn write_bit(&mut self, value: u16) {
         self.val = (self.val << 1) | value;
         if self.position == self.bits_per_char - 1 {
             self.position = 0;
@@ -73,10 +86,8 @@ impl<F: Fn(u32) -> u32> CompressContext<F> {
     }
 
     #[inline]
-    pub fn write_bits(&mut self, n: usize, mut value: u32) {
-        //if (typeof(value)=="string")
-        //	value = value.charCodeAt(0);
-        for _i in 0..n {
+    pub fn write_bits(&mut self, n: usize, mut value: u16) {
+        for _ in 0..n {
             self.write_bit(value & 1);
             value >>= 1;
         }
@@ -90,70 +101,146 @@ impl<F: Fn(u32) -> u32> CompressContext<F> {
             self.num_bits += 1;
         }
     }
+
+    /// Compress a `u16`. This represents a wide char.
+    ///
+    #[inline]
+    pub fn write_u16(&mut self, c: u16) {
+        let c = vec![c];
+        if !self.dictionary.contains_key(&c) {
+            self.dictionary.insert(c.clone(), self.dict_size as u16);
+            self.dict_size += 1;
+            self.dictionary_to_create.insert(c.clone());
+        }
+
+        self.wc = self.w.clone();
+        self.wc.extend(&c);
+        if self.dictionary.contains_key(&self.wc) {
+            self.w = std::mem::take(&mut self.wc);
+        } else {
+            self.produce_w();
+            // Add wc to the dictionary.
+            self.dictionary
+                .insert(self.wc.clone(), self.dict_size as u16);
+            self.dict_size += 1;
+            self.w = c;
+        }
+    }
+
+    /// Finish the stream and get the final result.
+    ///
+    #[inline]
+    pub fn finish(mut self) -> Vec<u16> {
+        // Output the code for w.
+        if !self.w.is_empty() {
+            self.produce_w();
+        }
+
+        // Mark the end of the stream
+        self.write_bits(self.num_bits, CLOSE_CODE);
+
+        let str_len = self.output.len();
+        // Flush the last char
+        while self.output.len() == str_len {
+            self.write_bit(0);
+        }
+
+        self.output
+    }
 }
 
-#[inline]
-pub fn compress_str(input: &str) -> Vec<u32> {
-    compress(input, 16, |n| n)
-}
-
-/// Compress a [`&str`] as a valid [`String`].
+/// Compress a string into a [`Vec<u16>`].
+///
+/// The resulting [`Vec`] may contain invalid UTF16.
 ///
 #[inline]
-pub fn compress_to_utf16(input: &str) -> String {
-    let buf = compress(input, 15, |n| n + 32);
-    buf.iter()
-        .map(|i| std::char::from_u32(*i).expect("`compress_to_utf16 output was not valid unicode`"))
-        .collect()
+pub fn compress(input: impl IntoWideIter) -> Vec<u16> {
+    compress_internal(input.into_wide_iter(), 16, std::convert::identity)
 }
 
+/// Compress a string as a valid [`String`].
+///
+/// This function converts the result back into a Rust [`String`] since it is guaranteed to be valid UTF16.
+///
 #[inline]
-pub fn compress_uri(data: &str) -> Vec<u32> {
-    compress(&data, 6, |n| {
-        u32::from(URI_KEY.chars().nth(n as usize).unwrap())
-    })
+pub fn compress_to_utf16(input: impl IntoWideIter) -> String {
+    let compressed = compress_internal(input.into_wide_iter(), 15, |n| n + 32);
+    let mut compressed =
+        String::from_utf16(&compressed).expect("`compress_to_utf16 output was not valid unicode`");
+    compressed.push(' ');
+
+    compressed
 }
 
+/// Compress a string into a [`String`], which can be safely used in a uri.
+///
+/// This function converts the result back into a Rust [`String`] since it is guaranteed to be valid unicode.
+///
 #[inline]
-pub fn compress<F: Fn(u32) -> u32>(
-    uncompressed: &str,
-    bits_per_char: usize,
-    to_char: F,
-) -> Vec<u32> {
-    let mut ctx = CompressContext::new(bits_per_char, to_char);
-    uncompressed.chars().for_each(|c| {
-        let c_str = c.to_string();
-        if !ctx.dictionary.contains_key(&c_str) {
-            ctx.dictionary.insert(c_str.clone(), ctx.dict_size as u32);
-            ctx.dict_size += 1;
-            ctx.dictionary_to_create.insert(c_str.clone(), true);
-        }
-
-        ctx.wc = ctx.w.clone() + &c_str;
-        if ctx.dictionary.contains_key(&ctx.wc) {
-            ctx.w = ctx.wc.clone();
-        } else {
-            ctx.produce_w();
-            // Add wc to the dictionary.
-            ctx.dictionary.insert(ctx.wc.clone(), ctx.dict_size as u32);
-            ctx.dict_size += 1;
-            ctx.w = c_str;
-        }
+pub fn compress_to_encoded_uri_component(data: impl IntoWideIter) -> String {
+    let compressed = compress_internal(data.into_wide_iter(), 6, |n| {
+        u16::from(
+            *URI_KEY
+                .get(usize::from(n))
+                .expect("Invalid index into `URI_KEY` in `compress_to_encoded_uri_component`"),
+        )
     });
 
-    // Output the code for w.
-    if !ctx.w.is_empty() {
-        ctx.produce_w();
+    String::from_utf16(&compressed)
+        .expect("`compress_to_encoded_uri_component` output was not valid unicode`")
+}
+
+/// Compress a string into a [`String`], which is valid base64.
+///
+/// This function converts the result back into a Rust [`String`] since it is guaranteed to be valid unicode.
+///
+pub fn compress_to_base64(data: impl IntoWideIter) -> String {
+    let mut compressed = compress_internal(data.into_wide_iter(), 6, |n| {
+        u16::from(
+            *BASE64_KEY
+                .get(usize::from(n))
+                .expect("Invalid index into `BASE64_KEY` in `compress_to_base64`"),
+        )
+    });
+
+    let mod_4 = compressed.len() % 4;
+
+    if mod_4 != 0 {
+        for _ in mod_4..(4 + 1) {
+            compressed.push(u16::from(b'='));
+        }
     }
 
-    // Mark the end of the stream
-    ctx.write_bits(ctx.num_bits, 2);
+    String::from_utf16(&compressed).expect("`compress_to_base64` output was not valid unicode`")
+}
 
-    let str_len = ctx.output.len();
-    // Flush the last char
-    while ctx.output.len() == str_len {
-        ctx.write_bit(0);
+/// Compress a string into a [`Vec<u8>`].
+///
+pub fn compress_to_uint8_array(data: impl IntoWideIter) -> Vec<u8> {
+    let compressed = compress(data);
+
+    let mut buf = Vec::with_capacity(compressed.len() * 2);
+
+    for val in compressed.into_iter() {
+        buf.push((val >> 8) as u8);
+        buf.push((val & 0xFF) as u8);
     }
 
-    ctx.output
+    buf
+}
+
+/// The internal function for compressing data.
+///
+/// All other compression functions are built on top of this.
+/// It generally should not be used directly.
+///
+#[inline]
+pub fn compress_internal<I: Iterator<Item = u16>, F: Fn(u16) -> u16>(
+    uncompressed: I,
+    bits_per_char: usize,
+    to_char: F,
+) -> Vec<u16> {
+    let mut ctx = CompressContext::new(bits_per_char, to_char);
+    uncompressed.for_each(|c| ctx.write_u16(c));
+    ctx.finish()
 }

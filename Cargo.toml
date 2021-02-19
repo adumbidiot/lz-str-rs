@@ -21,12 +21,12 @@ exclude = [
 crate-type = [ "cdylib", "rlib" ]
 
 [dependencies]
-js-sys = { version = "0.3.46", optional = true }
-wasm-bindgen = { version = "0.2.69", optional = true }
+js-sys = { version = "0.3.47", optional = true }
+wasm-bindgen = { version = "0.2.70", optional = true }
 
 [dev-dependencies]
-rand = "0.8.2"
-criterion = "0.3.3"
+rand = "0.8.3"
+criterion = "0.3.4"
 
 [features]
 wasm-bindgen-support = [ "wasm-bindgen", "js-sys" ]
