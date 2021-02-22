@@ -17,53 +17,7 @@ type HashSet<T> = std::collections::HashSet<T>;
 type HashMap<K, V> = fnv::FnvHashMap<K, V>;
 
 #[cfg(feature = "fnv")]
-type HashSet<T> = VecSet<T>;
-// type HashSet<T> = fnv::FnvHashSet<T>;
-
-#[derive(Debug)]
-pub struct VecSet<T>(Vec<T>);
-
-impl<T> VecSet<T>
-where
-    T: Ord,
-{
-    #[inline]
-    pub fn new() -> Self {
-        VecSet(Vec::new())
-    }
-
-    #[inline]
-    pub fn insert(&mut self, val: T) -> bool {
-        match self.0.binary_search(&val) {
-            Ok(_index) => false,
-            Err(index) => {
-                self.0.insert(index, val);
-                true
-            }
-        }
-    }
-
-    #[inline]
-    pub fn remove(&mut self, val: &T) -> bool {
-        match self.0.binary_search(val) {
-            Ok(index) => {
-                self.0.remove(index);
-                true
-            }
-            Err(_index) => false,
-        }
-    }
-}
-
-impl<T> Default for VecSet<T>
-where
-    T: Ord,
-{
-    #[inline]
-    fn default() -> Self {
-        Self::new()
-    }
-}
+type HashSet<T> = fnv::FnvHashSet<T>;
 
 #[derive(Debug)]
 pub(crate) struct CompressContext<F> {
@@ -109,7 +63,7 @@ where
     }
 
     #[inline(always)]
-    pub fn produce_w(&mut self) {
+    fn produce_w(&mut self) {
         if self.w.len() == 1 && self.dictionary_to_create.remove(&self.w[0]) {
             let first_w_char = self.w[0];
             if first_w_char < 256 {
@@ -127,7 +81,7 @@ where
     }
 
     #[inline(always)]
-    pub fn write_bit(&mut self, value: u16) {
+    fn write_bit(&mut self, value: u16) {
         self.val = (self.val << 1) | value;
         if self.position == self.bits_per_char - 1 {
             self.position = 0;
@@ -140,7 +94,7 @@ where
     }
 
     #[inline(always)]
-    pub fn write_bits(&mut self, n: usize, mut value: u16) {
+    fn write_bits(&mut self, n: usize, mut value: u16) {
         for _ in 0..n {
             self.write_bit(value & 1);
             value >>= 1;
@@ -148,7 +102,7 @@ where
     }
 
     #[inline(always)]
-    pub fn decrement_enlarge_in(&mut self) {
+    fn decrement_enlarge_in(&mut self) {
         self.enlarge_in -= 1;
         if self.enlarge_in == 0 {
             self.enlarge_in = 1 << self.num_bits;
@@ -160,14 +114,15 @@ where
     ///
     #[inline(always)]
     pub fn write_u16(&mut self, c: u16) {
-        if !self.dictionary.contains_key(&[c][..]) {
+        if !self.dictionary.contains_key(std::slice::from_ref(&c)) {
             self.dictionary.insert(vec![c], self.dict_size as u16);
             self.dict_size += 1;
             self.dictionary_to_create.insert(c);
         }
 
-        self.wc.clear();
-        self.wc.extend(&self.w);
+        // wc = w + c
+        // This already has w + c from the last iteration, which became the w value for this iteration.
+        // Therefore, just add the new c.
         self.wc.push(c);
 
         if self.dictionary.contains_key(&self.wc) {
@@ -182,6 +137,11 @@ where
 
             self.w.clear();
             self.w.push(c);
+
+            // Pre-add w to the wc value for the next iteration.
+            // The w value is just c, as it is set above.
+            self.wc.clear();
+            self.wc.push(c);
         }
     }
 
