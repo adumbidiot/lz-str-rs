@@ -6,27 +6,83 @@ use crate::{
     },
     IntoWideIter,
 };
-use std::collections::{
-    HashMap,
-    HashSet,
-};
+
+#[cfg(not(feature = "fnv"))]
+type HashMap<K, V> = std::collections::HashMap<K, V>;
+
+#[cfg(not(feature = "fnv"))]
+type HashSet<T> = std::collections::HashSet<T>;
+
+#[cfg(feature = "fnv")]
+type HashMap<K, V> = fnv::FnvHashMap<K, V>;
+
+#[cfg(feature = "fnv")]
+type HashSet<T> = VecSet<T>;
+// type HashSet<T> = fnv::FnvHashSet<T>;
+
+#[derive(Debug)]
+pub struct VecSet<T>(Vec<T>);
+
+impl<T> VecSet<T>
+where
+    T: Ord,
+{
+    #[inline]
+    pub fn new() -> Self {
+        VecSet(Vec::new())
+    }
+
+    #[inline]
+    pub fn insert(&mut self, val: T) -> bool {
+        match self.0.binary_search(&val) {
+            Ok(_index) => false,
+            Err(index) => {
+                self.0.insert(index, val);
+                true
+            }
+        }
+    }
+
+    #[inline]
+    pub fn remove(&mut self, val: &T) -> bool {
+        match self.0.binary_search(val) {
+            Ok(index) => {
+                self.0.remove(index);
+                true
+            }
+            Err(_index) => false,
+        }
+    }
+}
+
+impl<T> Default for VecSet<T>
+where
+    T: Ord,
+{
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[derive(Debug)]
 pub(crate) struct CompressContext<F> {
     dictionary: HashMap<Vec<u16>, u16>,
-    dictionary_to_create: HashSet<Vec<u16>>,
+    dictionary_to_create: HashSet<u16>,
     wc: Vec<u16>,
     w: Vec<u16>,
     enlarge_in: usize,
+    /// Dictionary size. Cannot exceed u16::MAX.
     dict_size: usize,
     num_bits: usize,
-    result: Vec<u16>,
-    // Data
+    /// Output Data
     output: Vec<u16>,
     val: u16,
     position: usize,
     // Limits
     bits_per_char: usize,
+
+    /// Transform function for translating u16s before output.
     to_char: F,
 }
 
@@ -34,17 +90,16 @@ impl<F> CompressContext<F>
 where
     F: Fn(u16) -> u16,
 {
-    #[inline]
+    #[inline(always)]
     pub fn new(bits_per_char: usize, to_char: F) -> Self {
         CompressContext {
             dictionary: Default::default(),
-            dictionary_to_create: HashSet::new(),
+            dictionary_to_create: Default::default(),
             wc: Vec::new(),
             w: Vec::new(),
             enlarge_in: 2,
             dict_size: 3,
             num_bits: 2,
-            result: Vec::new(),
             output: Vec::new(),
             val: 0,
             position: 0,
@@ -53,9 +108,9 @@ where
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn produce_w(&mut self) {
-        if self.dictionary_to_create.contains(&self.w) {
+        if self.w.len() == 1 && self.dictionary_to_create.remove(&self.w[0]) {
             let first_w_char = self.w[0];
             if first_w_char < 256 {
                 self.write_bits(self.num_bits, 0);
@@ -65,14 +120,13 @@ where
                 self.write_bits(16, first_w_char);
             }
             self.decrement_enlarge_in();
-            self.dictionary_to_create.remove(&self.w);
         } else {
             self.write_bits(self.num_bits, *self.dictionary.get(&self.w).unwrap());
         }
         self.decrement_enlarge_in();
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn write_bit(&mut self, value: u16) {
         self.val = (self.val << 1) | value;
         if self.position == self.bits_per_char - 1 {
@@ -85,7 +139,7 @@ where
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn write_bits(&mut self, n: usize, mut value: u16) {
         for _ in 0..n {
             self.write_bit(value & 1);
@@ -93,37 +147,41 @@ where
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn decrement_enlarge_in(&mut self) {
         self.enlarge_in -= 1;
         if self.enlarge_in == 0 {
-            self.enlarge_in = 2_usize.pow(self.num_bits as u32);
+            self.enlarge_in = 1 << self.num_bits;
             self.num_bits += 1;
         }
     }
 
     /// Compress a `u16`. This represents a wide char.
     ///
-    #[inline]
+    #[inline(always)]
     pub fn write_u16(&mut self, c: u16) {
-        let c = vec![c];
-        if !self.dictionary.contains_key(&c) {
-            self.dictionary.insert(c.clone(), self.dict_size as u16);
+        if !self.dictionary.contains_key(&[c][..]) {
+            self.dictionary.insert(vec![c], self.dict_size as u16);
             self.dict_size += 1;
-            self.dictionary_to_create.insert(c.clone());
+            self.dictionary_to_create.insert(c);
         }
 
-        self.wc = self.w.clone();
-        self.wc.extend(&c);
+        self.wc.clear();
+        self.wc.extend(&self.w);
+        self.wc.push(c);
+
         if self.dictionary.contains_key(&self.wc) {
-            self.w = std::mem::take(&mut self.wc);
+            self.w.clear();
+            self.w.extend(&self.wc);
         } else {
             self.produce_w();
             // Add wc to the dictionary.
             self.dictionary
                 .insert(self.wc.clone(), self.dict_size as u16);
             self.dict_size += 1;
-            self.w = c;
+
+            self.w.clear();
+            self.w.push(c);
         }
     }
 
@@ -194,6 +252,7 @@ pub fn compress_to_encoded_uri_component(data: impl IntoWideIter) -> String {
 ///
 /// This function converts the result back into a Rust [`String`] since it is guaranteed to be valid unicode.
 ///
+#[inline]
 pub fn compress_to_base64(data: impl IntoWideIter) -> String {
     let mut compressed = compress_internal(data.into_wide_iter(), 6, |n| {
         u16::from(
@@ -216,6 +275,7 @@ pub fn compress_to_base64(data: impl IntoWideIter) -> String {
 
 /// Compress a string into a [`Vec<u8>`].
 ///
+#[inline]
 pub fn compress_to_uint8_array(data: impl IntoWideIter) -> Vec<u8> {
     let compressed = compress(data);
 

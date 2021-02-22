@@ -21,6 +21,9 @@ exclude = [
 crate-type = [ "cdylib", "rlib" ]
 
 [dependencies]
+fnv = { version = "1.0.7", optional = true }
+
+# wasm-bindgen dependencies
 js-sys = { version = "0.3.47", optional = true }
 wasm-bindgen = { version = "0.2.70", optional = true }
 
@@ -32,6 +35,12 @@ criterion = "0.3.4"
 wasm-bindgen-support = [ "wasm-bindgen", "js-sys" ]
 nightly = [ "criterion/real_blackbox" ]
 
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+
 [[bench]]
 name = "compress"
 harness = false
@@ -39,3 +48,20 @@ harness = false
 [[bench]]
 name = "decompress"
 harness = false
+
+[package.metadata.wasm-pack.profile.profiling]
+# wasm-opt kills debug info
+wasm-opt = [ "-g", "-O4", "--inlining-optimizing", "--precompute-propagate" ]
+
+[package.metadata.wasm-pack.profile.profiling.wasm-bindgen]
+debug-js-glue = false
+demangle-name-section = true
+dwarf-debug-info = true
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = [ "-O4" ]
+
+[package.metadata.wasm-pack.profile.release.wasm-bindgen]
+debug-js-glue = false
+demangle-name-section = true
+dwarf-debug-info = true

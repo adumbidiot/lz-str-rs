@@ -1,0 +1,1 @@
+wasm-pack build --target nodejs --profiling -- --features="wasm-bindgen-support,fnv"
