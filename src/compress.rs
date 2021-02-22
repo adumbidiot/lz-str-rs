@@ -121,6 +121,11 @@ where
         self.dictionary.reserve(size);
     }
 
+    #[inline(always)]
+    pub fn reserve_output_space(&mut self, size: usize) {
+        self.output.reserve(size);
+    }
+
     /// Compress a `u16`. This represents a wide char.
     ///
     #[inline(always)]
@@ -275,7 +280,9 @@ pub fn compress_internal<I: Iterator<Item = u16>, F: Fn(u16) -> u16>(
     let mut ctx = CompressContext::new(bits_per_char, to_char);
     let size_hint = uncompressed.size_hint();
     // Reserving the max theoretical size up front prevents allocations
-    ctx.reserve_dictionary_space(size_hint.1.unwrap_or(200));
+    let size_hint = size_hint.1.unwrap_or(200);
+    ctx.reserve_dictionary_space(size_hint);
+    ctx.reserve_output_space(size_hint);
     uncompressed.for_each(|c| ctx.write_u16(c));
     ctx.finish()
 }
