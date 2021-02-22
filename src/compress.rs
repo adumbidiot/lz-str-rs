@@ -32,9 +32,12 @@ pub(crate) struct CompressContext<F> {
     /// Output Data
     output: Vec<u16>,
     val: u16,
-    position: usize,
-    // Limits
-    bits_per_char: usize,
+
+    /// Bit position
+    position: u8,
+
+    /// Max # of bits per char
+    bits_per_char: u8,
 
     /// Transform function for translating u16s before output.
     to_char: F,
@@ -45,7 +48,7 @@ where
     F: Fn(u16) -> u16,
 {
     #[inline(always)]
-    pub fn new(bits_per_char: usize, to_char: F) -> Self {
+    pub fn new(bits_per_char: u8, to_char: F) -> Self {
         CompressContext {
             dictionary: Default::default(),
             dictionary_to_create: Default::default(),
@@ -57,7 +60,7 @@ where
             output: Vec::new(),
             val: 0,
             position: 0,
-            bits_per_char,
+            bits_per_char: bits_per_char,
             to_char,
         }
     }
@@ -75,14 +78,17 @@ where
             }
             self.decrement_enlarge_in();
         } else {
-            self.write_bits(self.num_bits, *self.dictionary.get(&self.w).unwrap());
+            self.write_bits(
+                self.num_bits,
+                *self.dictionary.get(&self.w).expect("Missing W entry"),
+            );
         }
         self.decrement_enlarge_in();
     }
 
     #[inline(always)]
     fn write_bit(&mut self, value: u16) {
-        self.val = (self.val << 1) | value;
+        self.val = (self.val << 1) | (value & 1);
         if self.position == self.bits_per_char - 1 {
             self.position = 0;
             let char_data = (self.to_char)(self.val);
@@ -163,11 +169,11 @@ where
         // Mark the end of the stream
         self.write_bits(self.num_bits, CLOSE_CODE);
 
-        let str_len = self.output.len();
         // Flush the last char
-        while self.output.len() == str_len {
-            self.write_bit(0);
-        }
+        self.val = self.val << 1; // Why is this needed?
+        self.val <<= (self.bits_per_char - 1) - self.position;
+        let char_data = (self.to_char)(self.val);
+        self.output.push(char_data);
 
         self.output
     }
@@ -263,7 +269,7 @@ pub fn compress_to_uint8_array(data: impl IntoWideIter) -> Vec<u8> {
 #[inline]
 pub fn compress_internal<I: Iterator<Item = u16>, F: Fn(u16) -> u16>(
     uncompressed: I,
-    bits_per_char: usize,
+    bits_per_char: u8,
     to_char: F,
 ) -> Vec<u16> {
     let mut ctx = CompressContext::new(bits_per_char, to_char);
