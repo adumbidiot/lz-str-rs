@@ -7,17 +7,17 @@ use crate::{
     IntoWideIter,
 };
 
-#[cfg(not(feature = "fnv"))]
+#[cfg(not(feature = "rustc-hash"))]
 type HashMap<K, V> = std::collections::HashMap<K, V>;
 
-#[cfg(not(feature = "fnv"))]
+#[cfg(not(feature = "rustc-hash"))]
 type HashSet<T> = std::collections::HashSet<T>;
 
-#[cfg(feature = "fnv")]
-type HashMap<K, V> = fnv::FnvHashMap<K, V>;
+#[cfg(feature = "rustc-hash")]
+type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 
-#[cfg(feature = "fnv")]
-type HashSet<T> = fnv::FnvHashSet<T>;
+#[cfg(feature = "rustc-hash")]
+type HashSet<T> = rustc_hash::FxHashSet<T>;
 
 #[derive(Debug)]
 pub(crate) struct CompressContext<F> {
@@ -27,7 +27,7 @@ pub(crate) struct CompressContext<F> {
     w: Vec<u16>,
     enlarge_in: usize,
     /// Dictionary size. Cannot exceed u16::MAX.
-    dict_size: usize,
+    dict_size: u32,
     num_bits: usize,
     /// Output Data
     output: Vec<u16>,
@@ -126,8 +126,9 @@ where
         self.wc.push(c);
 
         if self.dictionary.contains_key(&self.wc) {
-            self.w.clear();
-            self.w.extend(&self.wc);
+            // At this point, wc = w + c.
+            // In order to make w into wc, just add c.
+            self.w.push(c);
         } else {
             self.produce_w();
             // Add wc to the dictionary.

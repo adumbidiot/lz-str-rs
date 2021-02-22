@@ -21,7 +21,7 @@ exclude = [
 crate-type = [ "cdylib", "rlib" ]
 
 [dependencies]
-fnv = { version = "1.0.7", optional = true }
+rustc-hash = { version = "1.1.0", optional = true }
 
 # wasm-bindgen dependencies
 js-sys = { version = "0.3.47", optional = true }

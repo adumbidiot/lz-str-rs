@@ -9,10 +9,10 @@ let longTestString = '';
 for (var i = 0; i < 1000; i++)
     longTestString += i + " ";
 
-var suite = new Benchmark.Suite;
+var tatooCompressionSuite = new Benchmark.Suite;
 var longTestPhraseSuite = new Benchmark.Suite;
 
-suite.add('lz-string-js', function () {
+tatooCompressionSuite.add('lz-string-js', function () {
     let compressed_js = lz_string_js.compress(TEST_PHRASE);
 })
 .add('lz-string-rs', function () {
@@ -24,7 +24,6 @@ suite.add('lz-string-js', function () {
 .on('complete', function () {
     console.log('Fastest is ' + this.filter('fastest').map('name'));
 });
-
 
 longTestPhraseSuite.add('lz-string-js', function () {
     let compressed_js = lz_string_js.compress(longTestString);
@@ -39,5 +38,6 @@ longTestPhraseSuite.add('lz-string-js', function () {
     console.log('Fastest is ' + this.filter('fastest').map('name'));
 });
 
-suite.run();
+console.log('Tatoo Compression')
+tatooCompressionSuite.run();
 // longTestPhraseSuite.run();

@@ -1,1 +1,1 @@
-wasm-pack build --target nodejs --release -- --features="wasm-bindgen-support,fnv"
+wasm-pack build --target nodejs --release -- --features="wasm-bindgen-support,rustc-hash"
