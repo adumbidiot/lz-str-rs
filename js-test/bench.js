@@ -6,11 +6,11 @@ const TEST_PHRASE = 'During tattooing, ink is injected into the skin, initiating
 const COMPRESSED_TEST_PHRASE = "ࢅ灎ॠ瘎怄Űↂၻ㝆ƣ됍枀칹䀕肦̘⅀⚧ꢀᘕ쑾틭Ј䊖㡈ꇠ୪␔㙠⤐æ訑હ萲ꅀඦ鉔鍯꜀ᄨꑔ솣鳉ౙ䛢譀෍됦ख़ঔ衔ن⡐㵜ꇰè唽䷍ⶭ浴郀쀁㷘텄\ud8d0Ì堣ঢ়㰀賐ǈ䤵㍄고ꂫ敱쩀ၲ菒\ud80a‌᠁\udd79饉ࢉ醲瀩䗋ඡ诙㢠揢僪궻䷱攷酐ム鰠蠡쬴\ud924훁㘹ꁣ臵飐䇮\ud800唈஌཰䋔䠀䄧锎\u0003៑鲠홑ㄎڱ物ⲂἺแϒ棠騣쐕ᦠ샸ሹ嬬茂\ud8f8끍ꉂ액뎜⧝欋踃┳䄌䅰묗辒⦋⻨㐌䀇ⅅᠸ찜钹퇏죙エ訢ࠗꘫ郉湿∃一䦁ࠀⴐ쑢ꩊ獒븆㡄䨠胀쀨㘙䶀퉪䵚欢⋅쭩Ϩⷈ涼ᘹ뚩뇆Ṣꢆ①Ϊ끄몦멐䯄䆠␲谇漪圌㋫ꂹ쾦躄즦修삠ت⸌呃큤끃誦軫䌆뙘眒嵷ਰꃕ李齔膃聀䘭ଢ胕뫞洶侖삑儦蔂鶱鳋聐ਅ樂ᬏ擱႐်ଶ쵗ᤅꍁ멧슁攓⠛␩㙖谅ㆉྟ㋐瑜ࢃⲻတ켞춁溞຀ਊ\udc40ᄔᢀґည㌋步Ƅ儶捍Ð蠒ჱ屪倩覍⽠黥膗㘎蟂⃦⥀䅢裘㒀ꊐ⨯胣贈ⵃ솺⩄ӑ뜚ш둖式莵죊㓇䂲⢈\u0000";
 
 let longTestString = '';
-for (var i = 0; i < 1000; i++)
+for (var i = 0; i < 100000; i++)
     longTestString += i + " ";
 
 var tatooCompressionSuite = new Benchmark.Suite;
-var longTestPhraseSuite = new Benchmark.Suite;
+var longPhraseCompressionSuite = new Benchmark.Suite;
 
 tatooCompressionSuite.add('lz-string-js', function () {
     let compressed_js = lz_string_js.compress(TEST_PHRASE);
@@ -25,11 +25,15 @@ tatooCompressionSuite.add('lz-string-js', function () {
     console.log('Fastest is ' + this.filter('fastest').map('name'));
 });
 
-longTestPhraseSuite.add('lz-string-js', function () {
+longPhraseCompressionSuite.add('lz-string-js', function () {
     let compressed_js = lz_string_js.compress(longTestString);
 })
 .add('lz-string-rs', function () {
+    try {
     let compressed_rs = lz_string_rs.compress(longTestString);
+    } catch(e) {
+        console.log(e);
+    }
 })
 .on('cycle', function (event) {
     console.log(String(event.target));
@@ -38,6 +42,10 @@ longTestPhraseSuite.add('lz-string-js', function () {
     console.log('Fastest is ' + this.filter('fastest').map('name'));
 });
 
-console.log('Tatoo Compression')
+console.log('Tatoo Compression');
 tatooCompressionSuite.run();
-// longTestPhraseSuite.run();
+console.log();
+
+console.log('Long Phrase Compression');
+longPhraseCompressionSuite.run();
+console.log();

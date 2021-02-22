@@ -5,6 +5,8 @@ use wasm_bindgen::{
     JsCast,
 };
 
+const JS_STRING_CHUNK_SIZE: usize = 4096;
+
 /// An iterator over chars in a [`JsString`].
 ///
 pub struct JsStringIter<'a> {
@@ -50,12 +52,26 @@ impl<'a> IntoWideIter for &'a JsString {
 
 /// Compress a [`JsString`].
 ///
+/// Returns an empty string if the input is null or was not a [`JsString`].
+///
 #[wasm_bindgen]
 pub fn compress(data: &JsValue) -> JsString {
-    let data: &JsString = data.dyn_ref::<JsString>().expect("Valid JsString");
+    let mut ret = JsString::from_char_code(&[]);
+
+    let data: &JsString = match data.dyn_ref::<JsString>() {
+        Some(data) => data,
+        None => return ret,
+    };
+
     let data: Vec<u16> = data.iter().collect();
     let compressed = crate::compress(&data);
-    JsString::from_char_code(&compressed)
+
+    // Chunk the return to avoid overflowing the stack space
+    for chunk in compressed.chunks(JS_STRING_CHUNK_SIZE) {
+        ret = ret.concat(&JsString::from_char_code(chunk));
+    }
+
+    ret
 }
 
 /// Decompress a [`JsString`].
