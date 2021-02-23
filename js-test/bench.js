@@ -9,25 +9,6 @@ let longTestString = '';
 for (var i = 0; i < 100000; i++)
     longTestString += i + " ";
 
-var longPhraseCompressionSuite = new Benchmark.Suite;
-
-longPhraseCompressionSuite.add('lz-string-js', function () {
-    let compressed_js = lz_string_js.compress(longTestString);
-})
-.add('lz-string-rs', function () {
-    try {
-        let compressed_rs = lz_string_rs.compress(longTestString);
-    } catch (e) {
-        console.log(e);
-    }
-})
-.on('cycle', function (event) {
-    console.log(String(event.target));
-})
-.on('complete', function () {
-    console.log('Fastest is ' + this.filter('fastest').map('name'));
-});
-
 function tatooCompression() {
     let suite = new Benchmark.Suite;
 
@@ -45,6 +26,31 @@ function tatooCompression() {
     });
 
     console.log('Tatoo Compression');
+    suite.run();
+    console.log();
+}
+
+function longPhraseCompression() {
+    let suite = new Benchmark.Suite;
+
+    suite.add('lz-string-js', function () {
+        let compressed_js = lz_string_js.compress(longTestString);
+    })
+    .add('lz-string-rs', function () {
+        try {
+            let compressed_rs = lz_string_rs.compress(longTestString);
+        } catch (e) {
+            console.log(e);
+        }
+    })
+    .on('cycle', function (event) {
+        console.log(String(event.target));
+    })
+    .on('complete', function () {
+        console.log('Fastest is ' + this.filter('fastest').map('name'));
+    });
+
+    console.log('Long Phrase Compression');
     suite.run();
     console.log();
 }
@@ -70,8 +76,72 @@ function tatooUriCompression() {
     console.log();
 }
 
+function tatooUtf16Compression() {
+    let suite = new Benchmark.Suite;
+
+    suite.add('lz-string-js', function () {
+        let compressed_js = lz_string_js.compressToUTF16(TEST_PHRASE);
+    })
+    .add('lz-string-rs', function () {
+        let compressed_rs = lz_string_rs.compressToUTF16(TEST_PHRASE);
+    })
+    .on('cycle', function (event) {
+        console.log(String(event.target));
+    })
+    .on('complete', function () {
+        console.log('Fastest is ' + this.filter('fastest').map('name'));
+    });
+
+    console.log('Tatoo UTF16 Compression');
+    suite.run();
+    console.log();
+}
+
+function tatooBase64Compression() {
+    let suite = new Benchmark.Suite;
+
+    suite.add('lz-string-js', function () {
+        let compressed_js = lz_string_js.compressToBase64(TEST_PHRASE);
+    })
+    .add('lz-string-rs', function () {
+        let compressed_rs = lz_string_rs.compressToBase64(TEST_PHRASE);
+    })
+    .on('cycle', function (event) {
+        console.log(String(event.target));
+    })
+    .on('complete', function () {
+        console.log('Fastest is ' + this.filter('fastest').map('name'));
+    });
+
+    console.log('Tatoo Base64 Compression');
+    suite.run();
+    console.log();
+}
+
+function tatooUint8ArrayCompression() {
+    let suite = new Benchmark.Suite;
+
+    suite.add('lz-string-js', function () {
+        let compressed_js = lz_string_js.compressToUint8Array(TEST_PHRASE);
+    })
+    .add('lz-string-rs', function () {
+        let compressed_rs = lz_string_rs.compressToUint8Array(TEST_PHRASE);
+    })
+    .on('cycle', function (event) {
+        console.log(String(event.target));
+    })
+    .on('complete', function () {
+        console.log('Fastest is ' + this.filter('fastest').map('name'));
+    });
+
+    console.log('Tatoo Uint8Array Compression');
+    suite.run();
+    console.log();
+}
+
 tatooCompression();
+longPhraseCompression();
 tatooUriCompression();
-console.log('Long Phrase Compression');
-longPhraseCompressionSuite.run();
-console.log();
+tatooUtf16Compression();
+tatooBase64Compression();
+tatooUint8ArrayCompression();

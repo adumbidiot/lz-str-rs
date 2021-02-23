@@ -13,7 +13,7 @@ const CHAR_CODE: u16 = 0;
 /// Signal that a wide char is next
 const WIDE_CHAR_CODE: u16 = 1;
 
-/// The starting dictionary size. 
+/// The starting dictionary size.
 /// This is 3 because there are 3 starting codes: `CHAR_CODE`, `WIDE_CHAR_CODE`, and `END_CODE`.
 const START_DICT_SIZE: u32 = 3;
 

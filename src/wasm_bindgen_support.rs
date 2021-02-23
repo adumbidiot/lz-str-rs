@@ -1,5 +1,8 @@
 use crate::IntoWideIter;
-use js_sys::JsString;
+use js_sys::{
+    JsString,
+    Uint8Array,
+};
 use wasm_bindgen::{
     prelude::*,
     JsCast,
@@ -89,6 +92,48 @@ pub fn compress_to_encoded_uri_component(data: &JsValue) -> String {
     };
 
     crate::compress_to_encoded_uri_component(data)
+}
+
+/// Compress a [`JsString`] to UTF16.
+///
+/// Returns an empty string if the input is null or was not a [`JsString`].
+///
+#[wasm_bindgen(js_name = "compressToUTF16")]
+pub fn compress_to_utf16(data: &JsValue) -> String {
+    let data: &JsString = match data.dyn_ref::<JsString>() {
+        Some(data) => data,
+        None => return String::new(),
+    };
+
+    crate::compress_to_utf16(data)
+}
+
+/// Compress a [`JsString`] to Base64.
+///
+/// Returns an empty string if the input is null or was not a [`JsString`].
+///
+#[wasm_bindgen(js_name = "compressToBase64")]
+pub fn compress_to_base64(data: &JsValue) -> String {
+    let data: &JsString = match data.dyn_ref::<JsString>() {
+        Some(data) => data,
+        None => return String::new(),
+    };
+
+    crate::compress_to_base64(data)
+}
+
+/// Compress a [`JsString`] to a Uint8Array.
+///
+/// Returns an empty string if the input is null or was not a [`JsString`].
+///
+#[wasm_bindgen(js_name = "compressToUint8Array")]
+pub fn compress_to_uint8_array(data: &JsValue) -> Uint8Array {
+    let data: &JsString = match data.dyn_ref::<JsString>() {
+        Some(data) => data,
+        None => return Uint8Array::new_with_length(0),
+    };
+
+    Uint8Array::from(crate::compress_to_uint8_array(data).as_slice())
 }
 
 /// Decompress a [`JsString`].
