@@ -7,6 +7,16 @@ use crate::{
     IntoWideIter,
 };
 
+/// Signal that a char is next
+const CHAR_CODE: u16 = 0;
+
+/// Signal that a wide char is next
+const WIDE_CHAR_CODE: u16 = 1;
+
+/// The starting dictionary size. 
+/// This is 3 because there are 3 starting codes: `CHAR_CODE`, `WIDE_CHAR_CODE`, and `END_CODE`.
+const START_DICT_SIZE: u32 = 3;
+
 #[cfg(not(feature = "rustc-hash"))]
 type HashMap<K, V> = std::collections::HashMap<K, V>;
 
@@ -55,6 +65,7 @@ impl<F> CompressContext<F>
 where
     F: Fn(u16) -> u16,
 {
+    /// Make a new [`CompressContext`] that is ready for use.
     #[inline(always)]
     pub fn new(bits_per_char: u8, to_char: F) -> Self {
         CompressContext {
@@ -63,7 +74,7 @@ where
             wc: Vec::new(),
             w: Vec::new(),
             enlarge_in: 2,
-            dict_size: 3,
+            dict_size: START_DICT_SIZE,
             code_length: 2,
             output: Vec::new(),
             val: 0,
@@ -78,10 +89,10 @@ where
         if self.w.len() == 1 && self.dictionary_to_create.remove(&self.w[0]) {
             let first_w_char = self.w[0];
             if first_w_char < 256 {
-                self.write_bits(self.code_length, 0);
+                self.write_bits(self.code_length, CHAR_CODE);
                 self.write_bits(8, first_w_char);
             } else {
-                self.write_bits(self.code_length, 1);
+                self.write_bits(self.code_length, WIDE_CHAR_CODE);
                 self.write_bits(16, first_w_char);
             }
             self.decrement_enlarge_in();
@@ -94,6 +105,7 @@ where
         self.decrement_enlarge_in();
     }
 
+    /// Write n bits from value
     #[inline(always)]
     fn write_bits(&mut self, n: usize, mut value: u16) {
         for _ in 0..n {
@@ -165,7 +177,7 @@ where
         }
     }
 
-    /// Reset internal state
+    /// Reset internal state. This preserves buffers.
     #[inline]
     pub fn reset(&mut self) {
         self.dictionary.clear();
@@ -173,7 +185,7 @@ where
         self.wc.clear();
         self.w.clear();
         self.enlarge_in = 2;
-        self.dict_size = 3;
+        self.dict_size = START_DICT_SIZE;
         self.code_length = 2;
         self.output.clear();
         self.val = 0;

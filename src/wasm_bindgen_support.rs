@@ -77,6 +77,20 @@ pub fn compress(data: &JsValue) -> JsString {
     ret
 }
 
+/// Compress a [`JsString`] to a uri component.
+///
+/// Returns an empty string if the input is null or was not a [`JsString`].
+///
+#[wasm_bindgen(js_name = "compressToEncodedURIComponent")]
+pub fn compress_to_encoded_uri_component(data: &JsValue) -> String {
+    let data: &JsString = match data.dyn_ref::<JsString>() {
+        Some(data) => data,
+        None => return String::new(),
+    };
+
+    crate::compress_to_encoded_uri_component(data)
+}
+
 /// Decompress a [`JsString`].
 ///
 #[wasm_bindgen]
