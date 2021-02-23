@@ -26,11 +26,19 @@ pub(crate) struct CompressContext<F> {
     wc: Vec<u16>,
     w: Vec<u16>,
     enlarge_in: usize,
+
     /// Dictionary size. Cannot exceed u16::MAX.
+    /// This is a [`u32`] as this implementation relies on being able to add 1 to this value before using it.
+    /// So this can have an invalid value of u16::MAX + 1, which is fine so long as it is never used.
     dict_size: u32,
-    num_bits: usize,
+
+    /// The length of a code in bits.
+    code_length: usize,
+
     /// Output Data
     output: Vec<u16>,
+
+    /// Bit buffer
     val: u16,
 
     /// Bit position
@@ -56,11 +64,11 @@ where
             w: Vec::new(),
             enlarge_in: 2,
             dict_size: 3,
-            num_bits: 2,
+            code_length: 2,
             output: Vec::new(),
             val: 0,
             position: 0,
-            bits_per_char: bits_per_char,
+            bits_per_char,
             to_char,
         }
     }
@@ -70,16 +78,16 @@ where
         if self.w.len() == 1 && self.dictionary_to_create.remove(&self.w[0]) {
             let first_w_char = self.w[0];
             if first_w_char < 256 {
-                self.write_bits(self.num_bits, 0);
+                self.write_bits(self.code_length, 0);
                 self.write_bits(8, first_w_char);
             } else {
-                self.write_bits(self.num_bits, 1);
+                self.write_bits(self.code_length, 1);
                 self.write_bits(16, first_w_char);
             }
             self.decrement_enlarge_in();
         } else {
             self.write_bits(
-                self.num_bits,
+                self.code_length,
                 *self.dictionary.get(&self.w).expect("Missing W entry"),
             );
         }
@@ -111,8 +119,8 @@ where
     fn decrement_enlarge_in(&mut self) {
         self.enlarge_in -= 1;
         if self.enlarge_in == 0 {
-            self.enlarge_in = 1 << self.num_bits;
-            self.num_bits += 1;
+            self.enlarge_in = 1 << self.code_length;
+            self.code_length += 1;
         }
     }
 
@@ -162,17 +170,32 @@ where
         }
     }
 
+    /// Reset internal state
+    #[inline]
+    pub fn reset(&mut self) {
+        self.dictionary.clear();
+        self.dictionary_to_create.clear();
+        self.wc.clear();
+        self.w.clear();
+        self.enlarge_in = 2;
+        self.dict_size = 3;
+        self.code_length = 2;
+        self.output.clear();
+        self.val = 0;
+        self.position = 0;
+    }
+
     /// Finish the stream and get the final result.
     ///
     #[inline]
-    pub fn finish(mut self) -> Vec<u16> {
+    pub fn finish(&mut self) -> Vec<u16> {
         // Output the code for w.
         if !self.w.is_empty() {
             self.produce_w();
         }
 
         // Mark the end of the stream
-        self.write_bits(self.num_bits, CLOSE_CODE);
+        self.write_bits(self.code_length, CLOSE_CODE);
 
         // Flush the last char
         self.val = self.val << 1; // Why is this needed?
@@ -180,7 +203,10 @@ where
         let char_data = (self.to_char)(self.val);
         self.output.push(char_data);
 
-        self.output
+        // Reset state and return
+        let ret = std::mem::take(&mut self.output);
+        self.reset();
+        ret
     }
 }
 
@@ -270,6 +296,7 @@ pub fn compress_to_uint8_array(data: impl IntoWideIter) -> Vec<u8> {
 ///
 /// All other compression functions are built on top of this.
 /// It generally should not be used directly.
+/// This function looks at the maximum value of `Iterator::size_hint` to allocate its memory.
 ///
 #[inline]
 pub fn compress_internal<I: Iterator<Item = u16>, F: Fn(u16) -> u16>(
@@ -278,11 +305,22 @@ pub fn compress_internal<I: Iterator<Item = u16>, F: Fn(u16) -> u16>(
     to_char: F,
 ) -> Vec<u16> {
     let mut ctx = CompressContext::new(bits_per_char, to_char);
-    let size_hint = uncompressed.size_hint();
-    // Reserving the max theoretical size up front prevents allocations
-    let size_hint = size_hint.1.unwrap_or(200);
+    // Reserving the max theoretical size up front prevents allocations.
+    // Use 200 as a fallback.
+    let size_hint = uncompressed.size_hint().1.unwrap_or(200);
+
+    // This is probably too large a size for the dictionary.
+    // While wasteful, it does wonders for perf.
+    // This might have to be a library-wide opt-in option.
     ctx.reserve_dictionary_space(size_hint);
+
+    // This might actually be too small as some cases will create a larger output that the input.
+    // Generally though, this is too large.
+    //
+    // See comments for reserving dictionary space.
     ctx.reserve_output_space(size_hint);
+
     uncompressed.for_each(|c| ctx.write_u16(c));
+
     ctx.finish()
 }

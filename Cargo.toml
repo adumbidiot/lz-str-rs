@@ -32,8 +32,8 @@ rand = "0.8.3"
 criterion = "0.3.4"
 
 [features]
-wasm-bindgen-support = [ "wasm-bindgen", "js-sys" ]
 nightly = [ "criterion/real_blackbox" ]
+wasm-bindgen-support = [ "wasm-bindgen", "js-sys" ]
 
 [profile.release]
 codegen-units = 1
