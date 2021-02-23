@@ -95,22 +95,17 @@ where
     }
 
     #[inline(always)]
-    fn write_bit(&mut self, value: u16) {
-        self.val = (self.val << 1) | (value & 1);
-        if self.position == self.bits_per_char - 1 {
-            self.position = 0;
-            let char_data = (self.to_char)(self.val);
-            self.output.push(char_data);
-            self.val = 0;
-        } else {
-            self.position += 1;
-        }
-    }
-
-    #[inline(always)]
     fn write_bits(&mut self, n: usize, mut value: u16) {
         for _ in 0..n {
-            self.write_bit(value & 1);
+            self.val = (self.val << 1) | (value & 1);
+            if self.position == self.bits_per_char - 1 {
+                self.position = 0;
+                let char_data = (self.to_char)(self.val);
+                self.output.push(char_data);
+                self.val = 0;
+            } else {
+                self.position += 1;
+            }
             value >>= 1;
         }
     }
@@ -320,7 +315,9 @@ pub fn compress_internal<I: Iterator<Item = u16>, F: Fn(u16) -> u16>(
     // See comments for reserving dictionary space.
     ctx.reserve_output_space(size_hint);
 
-    uncompressed.for_each(|c| ctx.write_u16(c));
+    for c in uncompressed {
+        ctx.write_u16(c);
+    }
 
     ctx.finish()
 }

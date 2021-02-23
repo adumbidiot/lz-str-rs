@@ -40,6 +40,10 @@ impl<'a> Iterator for JsStringIter<'a> {
 
         Some(val)
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.length as usize, Some(self.length as usize))
+    }
 }
 
 impl<'a> IntoWideIter for &'a JsString {
@@ -63,8 +67,7 @@ pub fn compress(data: &JsValue) -> JsString {
         None => return ret,
     };
 
-    let data: Vec<u16> = data.iter().collect();
-    let compressed = crate::compress(&data);
+    let compressed = crate::compress(data);
 
     // Chunk the return to avoid overflowing the stack space
     for chunk in compressed.chunks(JS_STRING_CHUNK_SIZE) {
