@@ -61,7 +61,7 @@ where
         })
     }
 
-    #[inline]
+    #[inline(always)]
     fn read_bit(&mut self) -> Option<bool> {
         let res = self.val & (self.position as u16);
         self.position >>= 1;
@@ -74,7 +74,7 @@ where
         Some(res != 0)
     }
 
-    #[inline]
+    #[inline(always)]
     fn read_bits(&mut self, n: u32) -> Option<u16> {
         let mut res = 0;
         let max_power: u32 = 1 << n;
