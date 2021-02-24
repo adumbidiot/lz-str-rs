@@ -18,6 +18,9 @@ pub struct DecompressContext<I> {
     dictionary: Vec<Vec<u16>>,
     enlarge_in: u32,
     num_bits: u32,
+
+    w: Vec<u16>,
+    entry: Vec<u16>,
 }
 
 impl<I> DecompressContext<I>
@@ -41,13 +44,17 @@ where
 
             // Init dictionary with default codes
             dictionary: vec![vec![0], vec![1], vec![CLOSE_CODE]],
+
             enlarge_in: 4,
             num_bits: 3,
+
+            w: Vec::new(),
+            entry: Vec::new(),
         })
     }
 
     #[inline]
-    pub fn read_bit(&mut self) -> Option<bool> {
+    fn read_bit(&mut self) -> Option<bool> {
         let res = self.val & (self.position as u16);
         self.position >>= 1;
 
@@ -60,7 +67,7 @@ where
     }
 
     #[inline]
-    pub fn read_bits(&mut self, n: usize) -> Option<u16> {
+    fn read_bits(&mut self, n: u32) -> Option<u16> {
         let mut res = 0;
         let max_power: u32 = 1 << n;
         let mut power = 1;
@@ -79,6 +86,46 @@ where
         if self.enlarge_in == 0 {
             self.enlarge_in = 1 << self.num_bits;
             self.num_bits += 1;
+        }
+    }
+
+    #[inline]
+    fn read_string(&mut self) -> Option<bool> {
+        let code = self.read_bits(self.num_bits)?;
+        let dictionary_len = self.dictionary.len();
+
+        match code {
+            0 => {
+                let string = self.read_bits(8)?;
+                self.add_to_dictionary(vec![string]);
+                self.entry = vec![string];
+                Some(false)
+            }
+            1 => {
+                let string = self.read_bits(16)?;
+                self.add_to_dictionary(vec![string]);
+                self.entry = vec![string];
+                Some(false)
+            }
+            CLOSE_CODE => Some(true),
+            code if usize::from(code) < dictionary_len => {
+                let entry_value = self.dictionary.get(usize::from(code))?;
+
+                // entry = entry_value
+                self.entry.clear();
+                self.entry.extend(entry_value);
+
+                Some(false)
+            }
+            code if usize::from(code) == dictionary_len => {
+                // entry = w + w[0]
+                self.entry.clear();
+                self.entry.extend(&self.w);
+                self.entry.push(*self.w.get(0)?);
+
+                Some(false)
+            }
+            _ => None,
         }
     }
 }
@@ -203,57 +250,31 @@ where
             let bits_to_read = (next * 8) + 8;
             ctx.read_bits(bits_to_read.into())?
         }
-        CLOSE_CODE => return Some(Vec::new()),
+        CLOSE_CODE => {
+            return Some(Vec::new());
+        }
         _ => return None,
     };
     ctx.dictionary.insert(3, vec![first_entry]);
 
-    let mut w = vec![first_entry];
     let mut result = vec![first_entry];
-    let mut entry: Vec<u16> = Vec::new();
+    ctx.w.push(first_entry);
 
     result.reserve(max_input_len);
     loop {
-        let mut cc = ctx.read_bits(ctx.num_bits as usize)? as usize;
-        match cc as u16 {
-            0 | 1 => {
-                let bits_to_read = (cc * 8) + 8;
-                // if cc == 0 {
-                // if (errorCount++ > 10000) return "Error"; // TODO: Error logic
-                // }
-
-                let bits = ctx.read_bits(bits_to_read as usize)? as u16;
-                ctx.add_to_dictionary(vec![bits]);
-
-                cc = ctx.dictionary.len() - 1;
-            }
-            CLOSE_CODE => return Some(result),
-            _ => {}
+        if ctx.read_string()? {
+            return Some(result);
         }
 
-        if let Some(entry_value) = ctx.dictionary.get(cc as usize) {
-            // entry = entry_value.clone()
-            entry.clear();
-            entry.extend(entry_value);
-        } else if usize::from(cc) == ctx.dictionary.len() {
-            // entry = w.clone();
-            // entry.push(*w.get(0)?);
-            entry.clear();
-            entry.extend(&w);
-            entry.push(*w.get(0)?);
-        } else {
-            return None;
-        }
-
-        result.extend(&entry);
+        result.extend(&ctx.entry);
 
         // Add w+entry[0] to the dictionary.
-        let mut to_be_inserted = w.clone();
-        to_be_inserted.push(*entry.get(0)?);
+        let mut to_be_inserted = ctx.w.clone();
+        to_be_inserted.push(*ctx.entry.get(0).unwrap());
         ctx.add_to_dictionary(to_be_inserted);
 
         // w = entry
-        w.clear();
-        w.extend(&entry);
+        ctx.w.clear();
+        ctx.w.extend(&ctx.entry);
     }
 }
