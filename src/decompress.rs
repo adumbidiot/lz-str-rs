@@ -1,8 +1,10 @@
 use crate::{
     constants::{
         BASE64_KEY,
+        CHAR_CODE,
         CLOSE_CODE,
         URI_KEY,
+        WIDE_CHAR_CODE,
     },
     IntoWideIter,
 };
@@ -32,8 +34,14 @@ where
     /// # Errors
     /// Returns `None` if the iterator is empty.
     ///
+    /// # Panics
+    /// Panics if `bits_per_char` is greater than the number of bits in a `u16`.
+    ///
     #[inline]
-    pub fn new(mut compressed_data: I, reset_val: usize) -> Option<Self> {
+    pub fn new(mut compressed_data: I, bits_per_char: u8) -> Option<Self> {
+        assert!(usize::from(bits_per_char) <= std::mem::size_of::<u16>() * 8);
+
+        let reset_val = 1 << (bits_per_char - 1);
         let val = compressed_data.next()?;
 
         Some(DecompressContext {
@@ -45,8 +53,8 @@ where
             // Init dictionary with default codes
             dictionary: vec![vec![0], vec![1], vec![CLOSE_CODE]],
 
-            enlarge_in: 4,
-            num_bits: 3,
+            enlarge_in: 5,
+            num_bits: 2,
 
             w: Vec::new(),
             entry: Vec::new(),
@@ -89,22 +97,30 @@ where
         }
     }
 
-    #[inline]
+    #[inline(always)]
     fn read_string(&mut self) -> Option<bool> {
         let code = self.read_bits(self.num_bits)?;
         let dictionary_len = self.dictionary.len();
 
         match code {
-            0 => {
+            CHAR_CODE => {
                 let string = self.read_bits(8)?;
                 self.add_to_dictionary(vec![string]);
-                self.entry = vec![string];
+
+                // entry = string
+                self.entry.clear();
+                self.entry.push(string);
+
                 Some(false)
             }
-            1 => {
+            WIDE_CHAR_CODE => {
                 let string = self.read_bits(16)?;
                 self.add_to_dictionary(vec![string]);
-                self.entry = vec![string];
+
+                // entry = string
+                self.entry.clear();
+                self.entry.push(string);
+
                 Some(false)
             }
             CLOSE_CODE => Some(true),
@@ -228,39 +244,28 @@ pub fn decompress_from_uint8_array(compressed: &[u8]) -> Option<Vec<u16>> {
 /// Panics if `bits_per_char` is greater than the number of bits in a `u16`.
 ///
 #[inline]
-pub fn decompress_internal<I>(compressed: I, bits_per_char: usize) -> Option<Vec<u16>>
+pub fn decompress_internal<I>(compressed: I, bits_per_char: u8) -> Option<Vec<u16>>
 where
     I: Iterator<Item = u16>,
 {
-    assert!(bits_per_char <= std::mem::size_of::<u16>() * 8);
-
     let size_hint = compressed.size_hint();
     let max_input_len = size_hint.1.unwrap_or(200);
-
-    let reset_val = 1 << (bits_per_char - 1);
-    let mut ctx = match DecompressContext::new(compressed, reset_val) {
+    let mut ctx = match DecompressContext::new(compressed, bits_per_char) {
         Some(ctx) => ctx,
         None => return Some(Vec::new()),
     };
+    let mut result = Vec::with_capacity(max_input_len);
     ctx.dictionary.reserve(max_input_len);
 
-    let next = ctx.read_bits(2)?;
-    let first_entry: u16 = match next {
-        0 | 1 => {
-            let bits_to_read = (next * 8) + 8;
-            ctx.read_bits(bits_to_read.into())?
-        }
-        CLOSE_CODE => {
-            return Some(Vec::new());
-        }
-        _ => return None,
-    };
-    ctx.dictionary.insert(3, vec![first_entry]);
+    if ctx.read_string()? {
+        return Some(result);
+    }
 
-    let mut result = vec![first_entry];
+    let first_entry = *ctx.entry.get(0)?;
+    result.push(first_entry);
     ctx.w.push(first_entry);
+    ctx.num_bits += 1;
 
-    result.reserve(max_input_len);
     loop {
         if ctx.read_string()? {
             return Some(result);
@@ -270,7 +275,7 @@ where
 
         // Add w+entry[0] to the dictionary.
         let mut to_be_inserted = ctx.w.clone();
-        to_be_inserted.push(*ctx.entry.get(0).unwrap());
+        to_be_inserted.push(*ctx.entry.get(0)?);
         ctx.add_to_dictionary(to_be_inserted);
 
         // w = entry
