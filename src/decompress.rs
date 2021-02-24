@@ -275,15 +275,17 @@ where
 
         // Add w+entry[0] to the dictionary.
         let to_be_inserted = {
-            let mut vec = Vec::with_capacity(ctx.w.len() + 1);
-            vec.extend(&ctx.w);
+            // Swap prevents a copy and clears w, which is needed next.
+            let w_capacity = ctx.w.capacity();
+            let mut vec = std::mem::replace(&mut ctx.w, Vec::with_capacity(w_capacity)); 
             vec.push(*ctx.entry.get(0)?);
             vec
         };
         ctx.add_to_dictionary(to_be_inserted);
 
         // w = entry
-        ctx.w.clear();
-        ctx.w.extend(&ctx.entry);
+        // This is cleared above.
+        // entry is cleared at the start of every iteration, so just swap the buffers to avoid a copy.
+        std::mem::swap(&mut ctx.entry, &mut ctx.w);
     }
 }
