@@ -51,13 +51,13 @@ where
             reset_val,
 
             // Init dictionary with default codes
-            dictionary: vec![vec![0], vec![1], vec![CLOSE_CODE]],
+            dictionary: vec![vec![CHAR_CODE], vec![WIDE_CHAR_CODE], vec![CLOSE_CODE]],
 
             enlarge_in: 5,
             num_bits: 2,
 
-            w: Vec::new(),
-            entry: Vec::new(),
+            w: Vec::with_capacity(256),
+            entry: Vec::with_capacity(256),
         })
     }
 
@@ -274,8 +274,12 @@ where
         result.extend(&ctx.entry);
 
         // Add w+entry[0] to the dictionary.
-        let mut to_be_inserted = ctx.w.clone();
-        to_be_inserted.push(*ctx.entry.get(0)?);
+        let to_be_inserted = {
+            let mut vec = Vec::with_capacity(ctx.w.len() + 1);
+            vec.extend(&ctx.w);
+            vec.push(*ctx.entry.get(0)?);
+            vec
+        };
         ctx.add_to_dictionary(to_be_inserted);
 
         // w = entry

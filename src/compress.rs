@@ -301,7 +301,6 @@ pub fn compress_to_uint8_array(data: impl IntoWideIter) -> Vec<u8> {
 /// It generally should not be used directly.
 /// This function looks at the maximum value of `Iterator::size_hint` to allocate its memory.
 ///
-#[inline]
 pub fn compress_internal<I: Iterator<Item = u16>, F: Fn(u16) -> u16>(
     uncompressed: I,
     bits_per_char: u8,
