@@ -139,9 +139,36 @@ function tatooUint8ArrayCompression() {
     console.log();
 }
 
+function tatooDecompression() {
+    let suite = new Benchmark.Suite;
+
+    suite.add('lz-string-js', function () {
+        let decompressed_js = lz_string_js.decompress(COMPRESSED_TEST_PHRASE);
+    })
+    .add('lz-string-rs', function () {
+        let decompressed_rs = lz_string_rs.decompress(COMPRESSED_TEST_PHRASE);
+    })
+    .on('cycle', function (event) {
+        console.log(String(event.target));
+    })
+    .on('complete', function () {
+        console.log('Fastest is ' + this.filter('fastest').map('name'));
+    });
+
+    console.log('Tatoo Decompression');
+    suite.run();
+    console.log();
+}
+
+/*
 tatooCompression();
-longPhraseCompression();
 tatooUriCompression();
 tatooUtf16Compression();
 tatooBase64Compression();
 tatooUint8ArrayCompression();
+
+longPhraseCompression();
+
+*/
+
+tatooDecompression();

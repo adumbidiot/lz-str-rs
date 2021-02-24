@@ -14,9 +14,16 @@ pub struct DecompressContext<I> {
     compressed_data: I,
     position: usize,
     reset_val: usize,
+
+    dictionary: Vec<Vec<u16>>,
+    enlarge_in: u32,
+    num_bits: u32,
 }
 
-impl<I: Iterator<Item = u16>> DecompressContext<I> {
+impl<I> DecompressContext<I>
+where
+    I: Iterator<Item = u16>,
+{
     /// Make a new [`DecompressContext`].
     ///
     /// # Errors
@@ -24,11 +31,18 @@ impl<I: Iterator<Item = u16>> DecompressContext<I> {
     ///
     #[inline]
     pub fn new(mut compressed_data: I, reset_val: usize) -> Option<Self> {
+        let val = compressed_data.next()?;
+
         Some(DecompressContext {
-            val: compressed_data.next()?,
+            val,
             compressed_data,
             position: reset_val,
             reset_val,
+
+            // Init dictionary with default codes
+            dictionary: vec![vec![0], vec![1], vec![CLOSE_CODE]],
+            enlarge_in: 4,
+            num_bits: 3,
         })
     }
 
@@ -46,16 +60,26 @@ impl<I: Iterator<Item = u16>> DecompressContext<I> {
     }
 
     #[inline]
-    pub fn read_bits(&mut self, n: usize) -> Option<u32> {
+    pub fn read_bits(&mut self, n: usize) -> Option<u16> {
         let mut res = 0;
-        let max_power = 2_u32.pow(n as u32);
+        let max_power: u32 = 1 << n;
         let mut power = 1;
         while power != max_power {
-            res |= u32::from(self.read_bit()?) * power;
+            res |= u16::from(self.read_bit()?) * power as u16;
             power <<= 1;
         }
 
         Some(res)
+    }
+
+    #[inline]
+    fn add_to_dictionary(&mut self, data: Vec<u16>) {
+        self.dictionary.push(data);
+        self.enlarge_in -= 1;
+        if self.enlarge_in == 0 {
+            self.enlarge_in = 1 << self.num_bits;
+            self.num_bits += 1;
+        }
     }
 }
 
@@ -163,37 +187,34 @@ where
 {
     assert!(bits_per_char <= std::mem::size_of::<u16>() * 8);
 
-    let reset_val_pow = u32::try_from(bits_per_char).ok()? - 1;
-    let reset_val = 2_usize.pow(reset_val_pow);
+    let size_hint = compressed.size_hint();
+    let max_input_len = size_hint.1.unwrap_or(200);
+
+    let reset_val = 1 << (bits_per_char - 1);
     let mut ctx = match DecompressContext::new(compressed, reset_val) {
         Some(ctx) => ctx,
         None => return Some(Vec::new()),
     };
-
-    let mut dictionary: Vec<Vec<u16>> = Vec::with_capacity(3);
-    for i in 0_u16..3_u16 {
-        dictionary.push(vec![i]);
-    }
+    ctx.dictionary.reserve(max_input_len);
 
     let next = ctx.read_bits(2)?;
-    let first_entry: u16 = match next as u16 {
+    let first_entry: u16 = match next {
         0 | 1 => {
             let bits_to_read = (next * 8) + 8;
-            ctx.read_bits(bits_to_read as usize)? as u16
+            ctx.read_bits(bits_to_read.into())?
         }
         CLOSE_CODE => return Some(Vec::new()),
         _ => return None,
     };
-    dictionary.insert(3, vec![first_entry]);
+    ctx.dictionary.insert(3, vec![first_entry]);
 
     let mut w = vec![first_entry];
     let mut result = vec![first_entry];
-    let mut num_bits = 3;
-    let mut enlarge_in = 4;
-    let mut dict_size = 4;
-    let mut entry;
+    let mut entry: Vec<u16> = Vec::new();
+
+    result.reserve(max_input_len);
     loop {
-        let mut cc = ctx.read_bits(num_bits)? as usize;
+        let mut cc = ctx.read_bits(ctx.num_bits as usize)? as usize;
         match cc as u16 {
             0 | 1 => {
                 let bits_to_read = (cc * 8) + 8;
@@ -202,24 +223,23 @@ where
                 // }
 
                 let bits = ctx.read_bits(bits_to_read as usize)? as u16;
-                dictionary.push(vec![bits]);
-                dict_size += 1;
-                cc = dict_size - 1;
-                enlarge_in -= 1;
+                ctx.add_to_dictionary(vec![bits]);
+
+                cc = ctx.dictionary.len() - 1;
             }
             CLOSE_CODE => return Some(result),
             _ => {}
         }
 
-        if enlarge_in == 0 {
-            enlarge_in = 2_u32.pow(num_bits as u32);
-            num_bits += 1;
-        }
-
-        if let Some(entry_value) = dictionary.get(cc as usize) {
-            entry = entry_value.clone();
-        } else if cc == dict_size {
-            entry = w.clone();
+        if let Some(entry_value) = ctx.dictionary.get(cc as usize) {
+            // entry = entry_value.clone()
+            entry.clear();
+            entry.extend(entry_value);
+        } else if usize::from(cc) == ctx.dictionary.len() {
+            // entry = w.clone();
+            // entry.push(*w.get(0)?);
+            entry.clear();
+            entry.extend(&w);
             entry.push(*w.get(0)?);
         } else {
             return None;
@@ -230,15 +250,10 @@ where
         // Add w+entry[0] to the dictionary.
         let mut to_be_inserted = w.clone();
         to_be_inserted.push(*entry.get(0)?);
-        dictionary.push(to_be_inserted);
-        dict_size += 1;
-        enlarge_in -= 1;
+        ctx.add_to_dictionary(to_be_inserted);
 
-        w = entry;
-
-        if enlarge_in == 0 {
-            enlarge_in = 2_u32.pow(num_bits as u32);
-            num_bits += 1;
-        }
+        // w = entry
+        w.clear();
+        w.extend(&entry);
     }
 }

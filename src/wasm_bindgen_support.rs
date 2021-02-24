@@ -138,12 +138,23 @@ pub fn compress_to_uint8_array(data: &JsValue) -> Uint8Array {
 
 /// Decompress a [`JsString`].
 ///
+/// Returns an empty string if the input is null or was not a [`JsString`].
+///
+/// # Errors
+/// Returns [`None`]/null if decompression failed.
+///
 #[wasm_bindgen]
-pub fn decompress(data: &JsValue) -> JsValue {
-    let data: &JsString = data.dyn_ref::<JsString>().expect("Valid JsString");
-    let data: Vec<u16> = data.iter().collect();
-    crate::decompress(&data)
-        .map(|s| JsString::from_char_code(&s))
-        .map(Into::into)
-        .unwrap_or(JsValue::NULL)
+pub fn decompress(data: &JsValue) -> Option<JsString> {
+    let data: &JsString = match data.dyn_ref::<JsString>() {
+        Some(data) => data,
+        None => return Some(JsString::from_char_code(&[])),
+    };
+
+    if data.length() == 0 {
+        return None;
+    }
+
+    let decompressed = crate::decompress(data)?;
+
+    Some(JsString::from_char_code(&decompressed))
 }
