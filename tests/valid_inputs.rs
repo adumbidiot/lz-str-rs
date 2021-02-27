@@ -1,7 +1,7 @@
 use lz_str::decompress;
 
 #[test]
-fn valid_decompress() {
+fn valid_decompress_raw() {
     let valid_data: &[(Vec<u16>, Vec<u16>)] = &[
         ("red123".encode_utf16().collect(), vec![0x80, 0x80]),
         ("腆퍂蚂荂".encode_utf16().collect(), vec![0xD8A0]),

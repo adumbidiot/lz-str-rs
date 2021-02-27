@@ -29,8 +29,9 @@ type HashSet<T> = rustc_hash::FxHashSet<T>;
 pub(crate) struct CompressContext<F> {
     dictionary: HashMap<Vec<u16>, u16>,
     dictionary_to_create: HashSet<u16>,
-    wc: Vec<u16>,
+
     w: Vec<u16>,
+
     enlarge_in: usize,
 
     /// Dictionary size. Cannot exceed u16::MAX.
@@ -55,6 +56,9 @@ pub(crate) struct CompressContext<F> {
 
     /// Transform function for translating u16s before output.
     to_char: F,
+
+    /// Whether w is actually w + c right now.
+    w_is_wc: bool,
 }
 
 impl<F> CompressContext<F>
@@ -67,8 +71,9 @@ where
         CompressContext {
             dictionary: Default::default(),
             dictionary_to_create: Default::default(),
-            wc: Vec::new(),
+
             w: Vec::new(),
+
             enlarge_in: 2,
             dict_size: START_DICT_SIZE,
             code_length: 2,
@@ -77,12 +82,19 @@ where
             position: 0,
             bits_per_char,
             to_char,
+
+            w_is_wc: false,
         }
     }
 
     #[inline(always)]
     fn produce_w(&mut self) {
-        if self.w.len() == 1 && self.dictionary_to_create.remove(&self.w[0]) {
+        // wc is always either w or a subset of wc.
+        // Make sure to determine what case it is and select correct bounds.
+        // We add 1 if w is wc because wc is always 1 char greater than w.
+        if self.w.len() == (1 + usize::from(self.w_is_wc))
+            && self.dictionary_to_create.remove(&self.w[0])
+        {
             let first_w_char = self.w[0];
             if first_w_char < 256 {
                 self.write_bits(self.code_length, CHAR_CODE);
@@ -93,9 +105,14 @@ where
             }
             self.decrement_enlarge_in();
         } else {
+            // See above comment about selecting appropriate bounds based on whether w is wc.
+            let end_w_index = self.w.len() - usize::from(self.w_is_wc);
             self.write_bits(
                 self.code_length,
-                *self.dictionary.get(&self.w).expect("Missing W entry"),
+                self.dictionary
+                    .get(&self.w[..end_w_index])
+                    .copied()
+                    .expect("Missing W entry"),
             );
         }
         self.decrement_enlarge_in();
@@ -150,27 +167,32 @@ where
         // wc = w + c
         // This already has w + c from the last iteration, which became the w value for this iteration.
         // Therefore, just add the new c.
-        self.wc.push(c);
+        // w_is_wc is set to indicate that w is now wc.
+        self.w.push(c);
+        self.w_is_wc = true;
 
-        if self.dictionary.contains_key(&self.wc) {
+        if self.dictionary.contains_key(&self.w) {
             // At this point, wc = w + c.
             // In order to make w into wc, just add c.
-            self.w.push(c);
+            // We just pass here and let the w_is_wc become unset, transforming wc into w.
         } else {
             self.produce_w();
             // Add wc to the dictionary.
             self.dictionary
-                .insert(self.wc.clone(), self.dict_size as u16);
+                .insert(self.w.clone(), self.dict_size as u16);
             self.dict_size += 1;
 
+            // w and wc are both cleared here and set to c, so nuke w and let wc turn into w.
             self.w.clear();
             self.w.push(c);
 
             // Pre-add w to the wc value for the next iteration.
             // The w value is just c, as it is set above.
-            self.wc.clear();
-            self.wc.push(c);
+            // We just pass here and let the w_is_wc become unset, transforming wc into w.
         }
+
+        // w_is_wc is unset to indicate that wc is now w.
+        self.w_is_wc = false;
     }
 
     /// Reset internal state. This preserves buffers.
@@ -178,14 +200,17 @@ where
     pub fn reset(&mut self) {
         self.dictionary.clear();
         self.dictionary_to_create.clear();
-        self.wc.clear();
+
         self.w.clear();
+        
         self.enlarge_in = 2;
         self.dict_size = START_DICT_SIZE;
         self.code_length = 2;
         self.output.clear();
         self.val = 0;
         self.position = 0;
+        
+        self.w_is_wc = false;
     }
 
     /// Finish the stream and get the final result.
@@ -315,6 +340,11 @@ pub fn compress_internal<I: Iterator<Item = u16>, F: Fn(u16) -> u16>(
     // While wasteful, it does wonders for perf.
     // This might have to be a library-wide opt-in option.
     ctx.reserve_dictionary_space(size_hint);
+    
+    // w buffer cannot exceed `size_hint`. This is an overestimate.
+    // Disabled for now since it looks like allocating a large buffer 
+    // for every compression is not actually speeding it up much.
+    ctx.w.reserve(size_hint);
 
     // This might actually be too small as some cases will create a larger output that the input.
     // Generally though, this is too large.

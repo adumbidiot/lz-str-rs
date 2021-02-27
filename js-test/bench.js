@@ -160,7 +160,7 @@ function tatooDecompression() {
     console.log();
 }
 
-/*
+
 tatooCompression();
 tatooUriCompression();
 tatooUtf16Compression();
@@ -169,6 +169,5 @@ tatooUint8ArrayCompression();
 
 longPhraseCompression();
 
-*/
 
 tatooDecompression();

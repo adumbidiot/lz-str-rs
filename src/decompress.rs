@@ -277,7 +277,7 @@ where
         let to_be_inserted = {
             // Swap prevents a copy and clears w, which is needed next.
             let w_capacity = ctx.w.capacity();
-            let mut vec = std::mem::replace(&mut ctx.w, Vec::with_capacity(w_capacity)); 
+            let mut vec = std::mem::replace(&mut ctx.w, Vec::with_capacity(w_capacity));
             vec.push(*ctx.entry.get(0)?);
             vec
         };
