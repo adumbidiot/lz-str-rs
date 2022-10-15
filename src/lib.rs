@@ -6,8 +6,8 @@
 //!
 //! # Example
 //! ```rust
-//! // The demonstrated functions correspond with `LZString.compress` and `LZString.decompress` from the JS version.
-//! fn main() {
+//! # // The demonstrated functions correspond with `LZString.compress` and `LZString.decompress` from the JS version.
+//! # fn main() {
 //!     let data = "The quick brown fox jumps over the lazy dog";
 //! 
 //!     // Compress the data. This cannot fail.
@@ -27,7 +27,7 @@
 //!         String::from_utf16(&decompressed_data).expect("`decompressed_data` is not valid UTF16");
 //! 
 //!     assert!(data == decompressed_data);
-//! }
+//! # }
 //! ```
 //! 
 //! # Passing and Recieving Data
