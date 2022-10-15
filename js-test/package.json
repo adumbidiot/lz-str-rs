@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/adumbidiot/lz-str-rs#readme",
   "dependencies": {
-    "lz-string": "file:../bindings/lz-str-js/pkg",
+    "lz-string": "file:../bindings/lz-str-wasm/pkg",
     "lz-string-js": "npm:lz-string@^1.4.4",
     "mocha": "^8.4.0"
   }
