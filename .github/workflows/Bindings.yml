@@ -10,22 +10,20 @@ name: Bindings
 jobs:
   WebAssembly:
     runs-on: ubuntu-latest
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Install Wasm-Pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        
+      - name: Build Package
+        run: make build-wasm
+        
+      - name: Install Test Dependencies
+        working-directory: js-test
+        run: npm i
           
-        - name: Install Wasm-Pack
-          run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-          
-        - name: Build Package
-          run: make build-wasm
-          
-        - name: Install Test Dependencies
-          run: |
-            cd js-test
-            npm i
-            
-        - name: Run Tests
-          run: |
-            cd js-test
-            npm test
+      - name: Run Tests
+        working-directory: js-test
+        run: npm test
