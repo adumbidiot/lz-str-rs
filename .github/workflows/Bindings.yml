@@ -1,4 +1,4 @@
-name: JS
+name: Bindings
 'on':
   push:
     branches:
@@ -6,8 +6,9 @@ name: JS
   pull_request:
     branches:
       - master
+      
 jobs:
-  test:
+  WebAssembly:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -16,15 +17,13 @@ jobs:
       - name: Install Wasm-Pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
         
-      - name: Build lz-string-rs
-        run: wasm-pack build --target nodejs -- --features wasm-bindgen-support
+      - name: Build Package
+        run: make build-wasm
         
       - name: Install Test Dependencies
-        run: |
-            cd js-test
-            npm i
-            
+        working-directory: js-test
+        run: npm i
+          
       - name: Run Tests
-        run: |
-            cd js-test
-            npm test
+        working-directory: js-test
+        run: npm test

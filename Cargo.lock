@@ -274,8 +274,15 @@ name = "lz-str"
 version = "0.1.0"
 dependencies = [
  "criterion",
- "js-sys",
  "rand",
+]
+
+[[package]]
+name = "lz-str-wasm"
+version = "0.0.0"
+dependencies = [
+ "js-sys",
+ "lz-str",
  "wasm-bindgen",
 ]
 

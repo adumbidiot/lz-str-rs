@@ -54,6 +54,9 @@ cargo test
 cargo bench
 ```
 
+## Bindings
+[WebAssembly](bindings/lz-str-wasm)
+
 ## Authors
 adumbidiot (Nathaniel Daniel)
 

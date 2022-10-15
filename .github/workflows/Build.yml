@@ -29,7 +29,7 @@ jobs:
         run: cargo fmt --all -- --check
       
       - name: Clippy
-        run: cargo clippy --tests --examples --all --features wasm-bindgen-support -- -D warnings
+        run: cargo clippy --tests --examples --all -- -D warnings
           
   Deny:
     runs-on: ubuntu-latest
@@ -61,4 +61,4 @@ jobs:
         run: cargo build --verbose
         
       - name: Run Tests
-        run: cargo test --all --verbose --features wasm-bindgen-support
+        run: cargo test --all --verbose
