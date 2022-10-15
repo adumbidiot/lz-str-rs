@@ -55,7 +55,7 @@ cargo bench
 ```
 
 ## Bindings
-(WebAssembly)[bindings/lz-str-wasm]
+[WebAssembly](bindings/lz-str-wasm)
 
 ## Authors
 adumbidiot (Nathaniel Daniel)
