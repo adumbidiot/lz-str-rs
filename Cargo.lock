@@ -278,7 +278,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "lz-str-js"
+name = "lz-str-wasm"
 version = "0.0.0"
 dependencies = [
  "js-sys",

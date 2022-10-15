@@ -1,5 +1,5 @@
 [package]
-name = "lz-str-js"
+name = "lz-str-wasm"
 version = "0.0.0"
 edition = "2021"
 description = "A WebAssembly binding for lz-str"
