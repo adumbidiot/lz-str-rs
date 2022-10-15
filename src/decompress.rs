@@ -1,9 +1,5 @@
 use crate::{
-    constants::{
-        BASE64_KEY,
-        CLOSE_CODE,
-        URI_KEY,
-    },
+    constants::{BASE64_KEY, CLOSE_CODE, URI_KEY},
     IntoWideIter,
 };
 use std::convert::TryFrom;
