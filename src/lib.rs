@@ -25,13 +25,12 @@
 //! The [`IntoWideIter`] trait exists to ease the passing of data into functions.
 //! Most functions accept this generic parameter instead of a concrete type.
 //! Look at this trait's documentation to see what types this trait is implemented for.
-//!
 
 mod compress;
 mod constants;
 mod decompress;
+
 /// wasm-bindgen support functions
-///
 #[cfg(feature = "wasm-bindgen-support")]
 pub mod wasm_bindgen_support;
 
@@ -55,14 +54,11 @@ pub use crate::{
 };
 
 /// A trait to make it easier to pass arguments to functions.
-///
 pub trait IntoWideIter {
     /// The Iterator type
-    ///
     type Iter: Iterator<Item = u16>;
 
     /// Convert this object into something that yields possibly invalid wide characters.
-    ///
     fn into_wide_iter(self) -> Self::Iter;
 }
 
@@ -93,7 +89,7 @@ impl<'a> IntoWideIter for &'a [u16] {
     }
 }
 
-impl<'a> IntoWideIter for Vec<u16> {
+impl IntoWideIter for Vec<u16> {
     type Iter = std::vec::IntoIter<u16>;
 
     #[inline]

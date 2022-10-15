@@ -21,7 +21,6 @@ impl<I: Iterator<Item = u16>> DecompressContext<I> {
     ///
     /// # Errors
     /// Returns `None` if the iterator is empty.
-    ///
     #[inline]
     pub fn new(mut compressed_data: I, reset_val: usize) -> Option<Self> {
         Some(DecompressContext {
@@ -64,7 +63,6 @@ impl<I: Iterator<Item = u16>> DecompressContext<I> {
 ///
 /// # Errors
 /// Returns `None` if the decompression fails.
-///
 #[inline]
 pub fn decompress(compressed: impl IntoWideIter) -> Option<Vec<u16>> {
     decompress_internal(compressed.into_wide_iter(), 16)
@@ -74,7 +72,6 @@ pub fn decompress(compressed: impl IntoWideIter) -> Option<Vec<u16>> {
 ///
 /// # Errors
 /// Returns an error if the compressed data could not be decompressed.
-///
 #[inline]
 pub fn decompress_from_utf16(compressed: &str) -> Option<Vec<u16>> {
     decompress_internal(compressed.encode_utf16().map(|c| c - 32), 15)
@@ -84,7 +81,6 @@ pub fn decompress_from_utf16(compressed: &str) -> Option<Vec<u16>> {
 ///
 /// # Errors
 /// Returns an error if the compressed data could not be decompressed.
-///
 #[inline]
 pub fn decompress_from_encoded_uri_component(compressed: &str) -> Option<Vec<u16>> {
     let compressed: Option<Vec<u16>> = compressed
@@ -97,13 +93,12 @@ pub fn decompress_from_encoded_uri_component(compressed: &str) -> Option<Vec<u16
             }
         })
         .map(u32::from)
-        .map(|c| {
+        .flat_map(|c| {
             URI_KEY
                 .iter()
                 .position(|k| u8::try_from(c) == Ok(*k))
                 .map(|n| u16::try_from(n).ok())
         })
-        .flatten()
         .collect();
 
     decompress_internal(compressed?.into_iter(), 6)
@@ -113,18 +108,16 @@ pub fn decompress_from_encoded_uri_component(compressed: &str) -> Option<Vec<u16
 ///
 /// # Errors
 /// Returns an error if the compressed data could not be decompressed.
-///
 #[inline]
 pub fn decompress_from_base64(compressed: &str) -> Option<Vec<u16>> {
     let compressed: Option<Vec<u16>> = compressed
         .encode_utf16()
-        .map(|c| {
+        .flat_map(|c| {
             BASE64_KEY
                 .iter()
                 .position(|k| u8::try_from(c) == Ok(*k))
                 .map(|n| u16::try_from(n).ok())
         })
-        .flatten()
         .collect();
 
     decompress_internal(compressed?.into_iter(), 6)
@@ -134,7 +127,6 @@ pub fn decompress_from_base64(compressed: &str) -> Option<Vec<u16>> {
 ///
 /// # Errors
 /// Returns an error if the compressed data could not be decompressed.
-///
 #[inline]
 pub fn decompress_from_uint8_array(compressed: &[u8]) -> Option<Vec<u16>> {
     let mut buf = Vec::with_capacity(compressed.len() / 2);
@@ -155,7 +147,6 @@ pub fn decompress_from_uint8_array(compressed: &[u8]) -> Option<Vec<u16>> {
 ///
 /// # Panics
 /// Panics if `bits_per_char` is greater than the number of bits in a `u16`.
-///
 #[inline]
 pub fn decompress_internal<I>(compressed: I, bits_per_char: usize) -> Option<Vec<u16>>
 where
@@ -201,7 +192,7 @@ where
                 // if (errorCount++ > 10000) return "Error"; // TODO: Error logic
                 // }
 
-                let bits = ctx.read_bits(bits_to_read as usize)? as u16;
+                let bits = ctx.read_bits(bits_to_read)? as u16;
                 dictionary.push(vec![bits]);
                 dict_size += 1;
                 cc = dict_size - 1;
@@ -216,11 +207,11 @@ where
             num_bits += 1;
         }
 
-        if let Some(entry_value) = dictionary.get(cc as usize) {
+        if let Some(entry_value) = dictionary.get(cc) {
             entry = entry_value.clone();
         } else if cc == dict_size {
             entry = w.clone();
-            entry.push(*w.get(0)?);
+            entry.push(*w.first()?);
         } else {
             return None;
         }
@@ -229,7 +220,7 @@ where
 
         // Add w+entry[0] to the dictionary.
         let mut to_be_inserted = w.clone();
-        to_be_inserted.push(*entry.get(0)?);
+        to_be_inserted.push(*entry.first()?);
         dictionary.push(to_be_inserted);
         dict_size += 1;
         enlarge_in -= 1;
