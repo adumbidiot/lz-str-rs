@@ -30,20 +30,18 @@ mod compress;
 mod constants;
 mod decompress;
 
-/// wasm-bindgen support functions
-#[cfg(feature = "wasm-bindgen-support")]
-pub mod wasm_bindgen_support;
-
-pub use crate::{
-    compress::{
-        compress, compress_internal, compress_to_base64, compress_to_encoded_uri_component,
-        compress_to_uint8_array, compress_to_utf16,
-    },
-    decompress::{
-        decompress, decompress_from_base64, decompress_from_encoded_uri_component,
-        decompress_from_uint8_array, decompress_from_utf16, decompress_internal,
-    },
-};
+pub use crate::compress::compress;
+pub use crate::compress::compress_internal;
+pub use crate::compress::compress_to_base64;
+pub use crate::compress::compress_to_encoded_uri_component;
+pub use crate::compress::compress_to_uint8_array;
+pub use crate::compress::compress_to_utf16;
+pub use crate::decompress::decompress;
+pub use crate::decompress::decompress_from_base64;
+pub use crate::decompress::decompress_from_encoded_uri_component;
+pub use crate::decompress::decompress_from_uint8_array;
+pub use crate::decompress::decompress_from_utf16;
+pub use crate::decompress::decompress_internal;
 
 /// A trait to make it easier to pass arguments to functions.
 pub trait IntoWideIter {
