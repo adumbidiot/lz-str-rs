@@ -21,9 +21,9 @@ jobs:
         run: make build-wasm
         
       - name: Install Test Dependencies
-        working-directory: js-test
+        working-directory: bindings/lz-str-wasm/binding-tests
         run: npm i
           
       - name: Run Tests
-        working-directory: js-test
+        working-directory: bindings/lz-str-wasm/binding-tests
         run: npm test
