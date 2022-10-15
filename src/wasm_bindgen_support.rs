@@ -1,8 +1,5 @@
 use js_sys::JsString;
-use wasm_bindgen::{
-    prelude::*,
-    JsCast,
-};
+use wasm_bindgen::{prelude::*, JsCast};
 
 /// Compress a [`JsString`].
 ///

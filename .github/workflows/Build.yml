@@ -25,28 +25,11 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
         
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          components: rustfmt, clippy 
-          override: true
-          
       - name: RustFmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: '-- --check --color always'
-          
-      - name: Fetch
-        uses: actions-rs/cargo@v1
-        with:
-          command: fetch
-          
+        run: cargo fmt --all -- --check
+      
       - name: Clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: '--tests --all --all-features -- -D warnings'
+        run: cargo clippy --tests --examples --all --features wasm-bindgen-support -- -D warnings
           
   Deny:
     runs-on: ubuntu-latest

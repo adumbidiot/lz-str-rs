@@ -1,10 +1,6 @@
 use lz_str::{
-    compress,
-    compress_to_encoded_uri_component,
-    compress_to_utf16,
-    decompress,
-    decompress_from_encoded_uri_component,
-    decompress_from_utf16,
+    compress, compress_to_encoded_uri_component, compress_to_utf16, decompress,
+    decompress_from_encoded_uri_component, decompress_from_utf16,
 };
 
 const TEST_STR: &str = "The quick brown fox jumps over the lazy dog";

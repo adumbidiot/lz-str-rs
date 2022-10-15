@@ -1,10 +1,7 @@
 //! These tests were ported from https://github.com/pieroxy/lz-string/blob/83d7b59ebef47edc4cf0527bc03179b86e064f23/tests/lz-string-spec.js
 
 use rand::Rng;
-use std::{
-    fmt::Write,
-    string::FromUtf16Error,
-};
+use std::{fmt::Write, string::FromUtf16Error};
 
 fn compression_tests<C, D>(compress: C, decompress: D, bytearray: bool)
 where
