@@ -17,9 +17,6 @@ exclude = [
     ".github/*",
 ]
 
-[lib]
-crate-type = [ "cdylib", "rlib" ]
-
 [dependencies]
 
 [dev-dependencies]

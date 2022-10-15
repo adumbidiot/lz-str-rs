@@ -2,6 +2,12 @@
 name = "lz-str-js"
 version = "0.0.0"
 edition = "2021"
+description = "A WebAssembly binding for lz-str"
+repository = "https://github.com/adumbidiot/lz-str-rs"
+license = "MIT OR Apache-2.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 js-sys = "0.3.47"
