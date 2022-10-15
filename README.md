@@ -42,6 +42,7 @@ fn main() {
 }
 ```
 
+See the [examples](https://github.com/adumbidiot/lz-str-rs/tree/master/examples) directory for more examples.
 
 ## Testing
 ```bash
