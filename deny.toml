@@ -18,7 +18,7 @@ allow-osi-fsf-free = "neither"
 confidence-threshold = 0.93
 default = "deny"
 private = { ignore = true }
-allow = [ "Apache-2.0", "MIT" ]
+allow = [ "Apache-2.0", "MIT", "Unicode-DFS-2016" ]
 exceptions = []
 
 [bans]

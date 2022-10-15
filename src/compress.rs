@@ -20,7 +20,9 @@ pub(crate) struct CompressContext<F> {
     enlarge_in: usize,
     dict_size: usize,
     num_bits: usize,
-    result: Vec<u16>,
+
+    // result: Vec<u16>,
+
     // Data
     output: Vec<u16>,
     val: u16,
@@ -44,7 +46,8 @@ where
             enlarge_in: 2,
             dict_size: 3,
             num_bits: 2,
-            result: Vec::new(),
+
+            // result: Vec::new(),
             output: Vec::new(),
             val: 0,
             position: 0,
@@ -103,7 +106,6 @@ where
     }
 
     /// Compress a `u16`. This represents a wide char.
-    ///
     #[inline]
     pub fn write_u16(&mut self, c: u16) {
         let c = vec![c];
@@ -128,7 +130,6 @@ where
     }
 
     /// Finish the stream and get the final result.
-    ///
     #[inline]
     pub fn finish(mut self) -> Vec<u16> {
         // Output the code for w.
@@ -152,7 +153,6 @@ where
 /// Compress a string into a [`Vec<u16>`].
 ///
 /// The resulting [`Vec`] may contain invalid UTF16.
-///
 #[inline]
 pub fn compress(input: impl IntoWideIter) -> Vec<u16> {
     compress_internal(input.into_wide_iter(), 16, std::convert::identity)
@@ -193,7 +193,6 @@ pub fn compress_to_encoded_uri_component(data: impl IntoWideIter) -> String {
 /// Compress a string into a [`String`], which is valid base64.
 ///
 /// This function converts the result back into a Rust [`String`] since it is guaranteed to be valid unicode.
-///
 pub fn compress_to_base64(data: impl IntoWideIter) -> String {
     let mut compressed = compress_internal(data.into_wide_iter(), 6, |n| {
         u16::from(
@@ -215,7 +214,6 @@ pub fn compress_to_base64(data: impl IntoWideIter) -> String {
 }
 
 /// Compress a string into a [`Vec<u8>`].
-///
 pub fn compress_to_uint8_array(data: impl IntoWideIter) -> Vec<u8> {
     let compressed = compress(data);
 
@@ -233,13 +231,12 @@ pub fn compress_to_uint8_array(data: impl IntoWideIter) -> Vec<u8> {
 ///
 /// All other compression functions are built on top of this.
 /// It generally should not be used directly.
-///
 #[inline]
-pub fn compress_internal<I: Iterator<Item = u16>, F: Fn(u16) -> u16>(
-    uncompressed: I,
-    bits_per_char: usize,
-    to_char: F,
-) -> Vec<u16> {
+pub fn compress_internal<I, F>(uncompressed: I, bits_per_char: usize, to_char: F) -> Vec<u16>
+where
+    I: Iterator<Item = u16>,
+    F: Fn(u16) -> u16,
+{
     let mut ctx = CompressContext::new(bits_per_char, to_char);
     uncompressed.for_each(|c| ctx.write_u16(c));
     ctx.finish()

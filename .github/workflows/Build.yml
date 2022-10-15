@@ -1,4 +1,4 @@
-name: Rust
+name: Build
 'on':
   push:
     branches:
@@ -7,44 +7,75 @@ name: Rust
     branches:
       - master
 jobs:
-  lint:
+  Lint:
     name: Lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        
+      - name: Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           components: rustfmt, clippy 
           override: true
+          
       - name: RustFmt
         uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: '-- --check --color always'
+          
       - name: Fetch
         uses: actions-rs/cargo@v1
         with:
           command: fetch
+          
       - name: Clippy
         uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: '--tests --all --all-features -- -D warnings'
-  cargo-deny:
+          
+  Deny:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        
       - name: Deny
         uses: EmbarkStudios/cargo-deny-action@v1
-  build:
+        
+  Build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        
+      - name: Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        
       - name: Build
         run: cargo build --verbose
+        
       - name: Run Tests
         run: cargo test --all --verbose --features wasm-bindgen-support

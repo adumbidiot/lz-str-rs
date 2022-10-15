@@ -1,23 +1,19 @@
-name: Rustdoc
+name: Doc
 on:
   push:
    branches:
    - master
+   
 jobs:
-  rustdoc:
+  Doc:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
-    - name: Install Toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        profile: minimal
-        override: true
-        components: rustfmt, rust-src
+      uses: actions/checkout@v3
+        
     - name: Build Documentation
       run: cargo doc --all --no-deps
+      
     - name: Deploy Docs
       uses: peaceiris/actions-gh-pages@v3
       with:
