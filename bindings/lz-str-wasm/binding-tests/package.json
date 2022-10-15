@@ -1,7 +1,7 @@
 {
-  "name": "js-test",
+  "name": "binding-tests",
   "version": "0.0.0",
-  "description": "A testbed for lz-string-rs",
+  "description": "bindings tests for lz-str-wasm",
   "main": "index.js",
   "scripts": {
     "test": "mocha"
@@ -20,8 +20,8 @@
   },
   "homepage": "https://github.com/adumbidiot/lz-str-rs#readme",
   "dependencies": {
-    "lz-string": "file:../bindings/lz-str-wasm/pkg",
+    "lz-string": "file:../pkg",
     "lz-string-js": "npm:lz-string@^1.4.4",
-    "mocha": "^8.4.0"
+    "mocha": "^10.0.0"
   }
 }
