@@ -1,8 +1,9 @@
-use crate::{
-    constants::{BASE64_KEY, CLOSE_CODE, URI_KEY},
-    IntoWideIter,
-};
+use crate::constants::BASE64_KEY;
+use crate::constants::CLOSE_CODE;
+use crate::constants::URI_KEY;
+use crate::IntoWideIter;
 use std::convert::TryFrom;
+use std::convert::TryInto;
 
 #[derive(Debug)]
 pub struct DecompressContext<I> {
@@ -12,7 +13,10 @@ pub struct DecompressContext<I> {
     reset_val: usize,
 }
 
-impl<I: Iterator<Item = u16>> DecompressContext<I> {
+impl<I> DecompressContext<I>
+where
+    I: Iterator<Item = u16>,
+{
     /// Make a new [`DecompressContext`].
     ///
     /// # Errors
@@ -125,12 +129,23 @@ pub fn decompress_from_base64(compressed: &str) -> Option<Vec<u16>> {
 /// Returns an error if the compressed data could not be decompressed.
 #[inline]
 pub fn decompress_from_uint8_array(compressed: &[u8]) -> Option<Vec<u16>> {
-    let mut buf = Vec::with_capacity(compressed.len() / 2);
-    for i in 0..(compressed.len() / 2) {
-        buf.push(u16::from(compressed[i * 2]) * 256 + u16::from(compressed[i * 2 + 1]));
+    // The buffer is a UCS2 big endian encoded string.
+    // If it is not a multiple of 2, it is invalid.
+    let compressed_len = compressed.len();
+    if compressed_len & 1 == 1 {
+        return None;
     }
 
-    decompress(&buf)
+    let buffer: Vec<u16> = compressed
+        .chunks(2)
+        .map(|slice| {
+            // The slice is always guaranteed to be 2 here.
+            // We check to see if the length is a multiple of 2 earlier.
+            u16::from_be_bytes(slice.try_into().unwrap())
+        })
+        .collect();
+
+    decompress(&buffer)
 }
 
 /// The internal decompress function.
@@ -150,7 +165,8 @@ where
 {
     assert!(bits_per_char <= std::mem::size_of::<u16>() * 8);
 
-    let reset_val_pow = u32::try_from(bits_per_char).ok()? - 1;
+    // u16::MAX < u32::MAX
+    let reset_val_pow = u32::try_from(bits_per_char).unwrap() - 1;
     let reset_val = 2_usize.pow(reset_val_pow);
     let mut ctx = match DecompressContext::new(compressed, reset_val) {
         Some(ctx) => ctx,
