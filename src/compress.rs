@@ -154,7 +154,6 @@ pub fn compress(input: impl IntoWideIter) -> Vec<u16> {
 /// Compress a string as a valid [`String`].
 ///
 /// This function converts the result back into a Rust [`String`] since it is guaranteed to be valid UTF16.
-///
 #[inline]
 pub fn compress_to_utf16(input: impl IntoWideIter) -> String {
     let compressed = compress_internal(input.into_wide_iter(), 15, |n| n + 32);
@@ -168,7 +167,6 @@ pub fn compress_to_utf16(input: impl IntoWideIter) -> String {
 /// Compress a string into a [`String`], which can be safely used in a uri.
 ///
 /// This function converts the result back into a Rust [`String`] since it is guaranteed to be valid unicode.
-///
 #[inline]
 pub fn compress_to_encoded_uri_component(data: impl IntoWideIter) -> String {
     let compressed = compress_internal(data.into_wide_iter(), 6, |n| {
@@ -208,16 +206,10 @@ pub fn compress_to_base64(data: impl IntoWideIter) -> String {
 
 /// Compress a string into a [`Vec<u8>`].
 pub fn compress_to_uint8_array(data: impl IntoWideIter) -> Vec<u8> {
-    let compressed = compress(data);
-
-    let mut buf = Vec::with_capacity(compressed.len() * 2);
-
-    for val in compressed.into_iter() {
-        buf.push((val >> 8) as u8);
-        buf.push((val & 0xFF) as u8);
-    }
-
-    buf
+    compress(data)
+        .into_iter()
+        .flat_map(|value| value.to_be_bytes())
+        .collect()
 }
 
 /// The internal function for compressing data.
