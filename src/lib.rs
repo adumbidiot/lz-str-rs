@@ -1,5 +1,9 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
+#![warn(clippy::cast_lossless)]
+#![warn(clippy::cast_possible_wrap)]
+// TODO: Enable this
+// #![warn(clippy::cast_possible_truncation)]
 
 //! A port of [lz-string](https://github.com/pieroxy/lz-string) to Rust.
 //!

@@ -14,6 +14,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         
+      - name: Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          
       - name: Install Wasm-Pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
         
