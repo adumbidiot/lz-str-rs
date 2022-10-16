@@ -2,7 +2,6 @@
 #![deny(missing_docs)]
 #![warn(clippy::cast_lossless)]
 #![warn(clippy::cast_possible_wrap)]
-
 // TODO: Enable this
 // #![warn(clippy::cast_possible_truncation)]
 

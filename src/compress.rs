@@ -1,8 +1,9 @@
-use crate::{
-    constants::{BASE64_KEY, CLOSE_CODE, URI_KEY},
-    IntoWideIter,
-};
-use std::collections::{HashMap, HashSet};
+use crate::constants::BASE64_KEY;
+use crate::constants::CLOSE_CODE;
+use crate::constants::URI_KEY;
+use crate::IntoWideIter;
+use std::collections::HashMap;
+use std::collections::HashSet;
 
 #[derive(Debug)]
 pub(crate) struct CompressContext<F> {
@@ -19,9 +20,18 @@ pub(crate) struct CompressContext<F> {
     // Data
     output: Vec<u16>,
     val: u16,
-    position: usize,
-    // Limits
-    bits_per_char: usize,
+
+    /// The current bit position
+    bit_position: u8,
+
+    /// The current # of bits per char.
+    ///
+    /// This value may not exceed 16,
+    /// as the reference implementation will also not handle values over 16.
+    bits_per_char: u8,
+
+    /// A transformation function to map a u16 to another u16,
+    /// before appending it to the output buffer.
     to_char: F,
 }
 
@@ -30,10 +40,12 @@ where
     F: Fn(u16) -> u16,
 {
     #[inline]
-    pub fn new(bits_per_char: usize, to_char: F) -> Self {
+    pub fn new(bits_per_char: u8, to_char: F) -> Self {
+        assert!(bits_per_char <= 16);
+
         CompressContext {
-            dictionary: Default::default(),
-            dictionary_to_create: HashSet::new(),
+            dictionary: HashMap::with_capacity(16),
+            dictionary_to_create: HashSet::with_capacity(16),
             wc: Vec::new(),
             w: Vec::new(),
             enlarge_in: 2,
@@ -43,7 +55,8 @@ where
             // result: Vec::new(),
             output: Vec::new(),
             val: 0,
-            position: 0,
+
+            bit_position: 0,
             bits_per_char,
             to_char,
         }
@@ -71,13 +84,12 @@ where
     #[inline]
     pub fn write_bit(&mut self, value: u16) {
         self.val = (self.val << 1) | value;
-        if self.position == self.bits_per_char - 1 {
-            self.position = 0;
+        self.bit_position += 1;
+        if self.bit_position == self.bits_per_char {
+            self.bit_position = 0;
             let char_data = (self.to_char)(self.val);
             self.output.push(char_data);
             self.val = 0;
-        } else {
-            self.position += 1;
         }
     }
 
@@ -217,7 +229,7 @@ pub fn compress_to_uint8_array(data: impl IntoWideIter) -> Vec<u8> {
 /// All other compression functions are built on top of this.
 /// It generally should not be used directly.
 #[inline]
-pub fn compress_internal<I, F>(uncompressed: I, bits_per_char: usize, to_char: F) -> Vec<u16>
+pub fn compress_internal<I, F>(uncompressed: I, bits_per_char: u8, to_char: F) -> Vec<u16>
 where
     I: Iterator<Item = u16>,
     F: Fn(u16) -> u16,
