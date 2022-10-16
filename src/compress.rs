@@ -7,7 +7,7 @@ use std::collections::HashSet;
 
 #[derive(Debug)]
 pub(crate) struct CompressContext<F> {
-    dictionary: HashMap<Vec<u16>, u16>,
+    dictionary: HashMap<Vec<u16>, u32>,
     dictionary_to_create: HashSet<Vec<u16>>,
     wc: Vec<u16>,
     w: Vec<u16>,
@@ -77,10 +77,10 @@ where
             let first_w_char = self.w[0];
             if first_w_char < 256 {
                 self.write_bits(self.num_bits, 0);
-                self.write_bits(8, first_w_char);
+                self.write_bits(8, first_w_char.into());
             } else {
                 self.write_bits(self.num_bits, 1);
-                self.write_bits(16, first_w_char);
+                self.write_bits(16, first_w_char.into());
             }
             self.decrement_enlarge_in();
             self.dictionary_to_create.remove(&self.w);
@@ -91,8 +91,8 @@ where
     }
 
     #[inline]
-    pub fn write_bit(&mut self, value: u16) {
-        self.val = (self.val << 1) | value;
+    pub fn write_bit(&mut self, value: u32) {
+        self.val = (self.val << 1) | (value as u16);
         self.bit_position += 1;
         if self.bit_position == self.bits_per_char {
             self.bit_position = 0;
@@ -103,7 +103,7 @@ where
     }
 
     #[inline]
-    pub fn write_bits(&mut self, n: u32, mut value: u16) {
+    pub fn write_bits(&mut self, n: u32, mut value: u32) {
         for _ in 0..n {
             self.write_bit(value & 1);
             value >>= 1;
@@ -124,7 +124,7 @@ where
     pub fn write_u16(&mut self, c: u16) {
         let c = vec![c];
         if !self.dictionary.contains_key(&c) {
-            self.dictionary.insert(c.clone(), self.dict_size as u16);
+            self.dictionary.insert(c.clone(), self.dict_size as u32);
             self.dict_size += 1;
             self.dictionary_to_create.insert(c.clone());
         }
@@ -137,7 +137,7 @@ where
             self.produce_w();
             // Add wc to the dictionary.
             self.dictionary
-                .insert(self.wc.clone(), self.dict_size as u16);
+                .insert(self.wc.clone(), self.dict_size as u32);
             self.dict_size += 1;
             self.w = c;
         }
@@ -152,7 +152,7 @@ where
         }
 
         // Mark the end of the stream
-        self.write_bits(self.num_bits, CLOSE_CODE);
+        self.write_bits(self.num_bits, CLOSE_CODE.into());
 
         let str_len = self.output.len();
         // Flush the last char
