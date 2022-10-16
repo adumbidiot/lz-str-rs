@@ -192,11 +192,7 @@ pub fn compress_to_utf16(input: impl IntoWideIter) -> String {
 #[inline]
 pub fn compress_to_encoded_uri_component(data: impl IntoWideIter) -> String {
     let compressed = compress_internal(data.into_wide_iter(), 6, |n| {
-        u16::from(
-            *URI_KEY
-                .get(usize::from(n))
-                .expect("Invalid index into `URI_KEY` in `compress_to_encoded_uri_component`"),
-        )
+        u16::from(URI_KEY[usize::from(n)])
     });
 
     String::from_utf16(&compressed)
@@ -208,11 +204,7 @@ pub fn compress_to_encoded_uri_component(data: impl IntoWideIter) -> String {
 /// This function converts the result back into a Rust [`String`] since it is guaranteed to be valid unicode.
 pub fn compress_to_base64(data: impl IntoWideIter) -> String {
     let mut compressed = compress_internal(data.into_wide_iter(), 6, |n| {
-        u16::from(
-            *BASE64_KEY
-                .get(usize::from(n))
-                .expect("Invalid index into `BASE64_KEY` in `compress_to_base64`"),
-        )
+        u16::from(BASE64_KEY[usize::from(n)])
     });
 
     let mod_4 = compressed.len() % 4;
