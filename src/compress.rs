@@ -13,7 +13,12 @@ pub(crate) struct CompressContext<F> {
     w: Vec<u16>,
     enlarge_in: usize,
     dict_size: usize,
-    num_bits: usize,
+
+    /// The current number of bits in a code.
+    ///
+    /// This is a 32,
+    /// because in practice there is no sensibe reason to have a code over u32::MAX bytes in length.
+    num_bits: u32,
 
     // result: Vec<u16>,
 
@@ -21,10 +26,10 @@ pub(crate) struct CompressContext<F> {
     output: Vec<u16>,
     val: u16,
 
-    /// The current bit position
+    /// The current bit position.
     bit_position: u8,
 
-    /// The current # of bits per char.
+    /// The maximum # of bits per char.
     ///
     /// This value may not exceed 16,
     /// as the reference implementation will also not handle values over 16.
@@ -39,6 +44,10 @@ impl<F> CompressContext<F>
 where
     F: Fn(u16) -> u16,
 {
+    /// Make a new [`CompressContext`].
+    ///
+    /// # Panics
+    /// Panics if `bits_per_char` exceeds 16.
     #[inline]
     pub fn new(bits_per_char: u8, to_char: F) -> Self {
         assert!(bits_per_char <= 16);
@@ -94,7 +103,7 @@ where
     }
 
     #[inline]
-    pub fn write_bits(&mut self, n: usize, mut value: u16) {
+    pub fn write_bits(&mut self, n: u32, mut value: u16) {
         for _ in 0..n {
             self.write_bit(value & 1);
             value >>= 1;
@@ -105,7 +114,7 @@ where
     pub fn decrement_enlarge_in(&mut self) {
         self.enlarge_in -= 1;
         if self.enlarge_in == 0 {
-            self.enlarge_in = 2_usize.pow(self.num_bits as u32);
+            self.enlarge_in = 2_usize.pow(self.num_bits);
             self.num_bits += 1;
         }
     }
