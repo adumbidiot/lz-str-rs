@@ -13,7 +13,12 @@ pub(crate) struct CompressContext<F> {
     wc: Vec<u16>,
     w: Vec<u16>,
     enlarge_in: usize,
-    dict_size: usize,
+
+    // result: Vec<u16>,
+
+    // Data
+    output: Vec<u16>,
+    val: u16,
 
     /// The current number of bits in a code.
     ///
@@ -21,12 +26,6 @@ pub(crate) struct CompressContext<F> {
     /// because we currently assume the max code size is 32 bits.
     /// 32 < u8::MAX
     num_bits: u8,
-
-    // result: Vec<u16>,
-
-    // Data
-    output: Vec<u16>,
-    val: u16,
 
     /// The current bit position.
     bit_position: u8,
@@ -60,7 +59,6 @@ where
             wc: Vec::new(),
             w: Vec::new(),
             enlarge_in: 2,
-            dict_size: 3,
             num_bits: 2,
 
             // result: Vec::new(),
@@ -127,8 +125,7 @@ where
         let c = vec![c];
         if !self.dictionary.contains_key(&c) {
             self.dictionary
-                .insert(c.clone(), self.dict_size.try_into().unwrap());
-            self.dict_size += 1;
+                .insert(c.clone(), (self.dictionary.len() + 3).try_into().unwrap());
             self.dictionary_to_create.insert(c.clone());
         }
 
@@ -139,9 +136,10 @@ where
         } else {
             self.produce_w();
             // Add wc to the dictionary.
-            self.dictionary
-                .insert(self.wc.clone(), self.dict_size.try_into().unwrap());
-            self.dict_size += 1;
+            self.dictionary.insert(
+                self.wc.clone(),
+                (self.dictionary.len() + 3).try_into().unwrap(),
+            );
             self.w = c;
         }
     }
