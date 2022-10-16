@@ -6,6 +6,26 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::convert::TryInto;
 
+/// The starting size of a codepoint.
+///
+/// Compression starts with the following codes:
+/// 0: u8
+/// 1: u16
+/// 2: close stream
+const START_NUM_BITS: u8 = 2;
+
+/// The stream code for a `u8`.
+const U8_CODE: u32 = 0;
+
+/// The stream code for a `u16`.
+const U16_CODE: u32 = 1;
+
+/// The number of "base codes",
+/// the default codes of all streams.
+/// 
+/// These are U8_CODE, U16_CODE, and CLOSE_CODE.
+const NUM_BASE_CODES: usize = 3;
+
 #[derive(Debug)]
 pub(crate) struct CompressContext<F> {
     dictionary: HashMap<Vec<u16>, u32>,
@@ -14,11 +34,11 @@ pub(crate) struct CompressContext<F> {
     w: Vec<u16>,
     enlarge_in: usize,
 
-    // result: Vec<u16>,
-
-    // Data
+    /// The output buffer.
     output: Vec<u16>,
-    val: u16,
+
+    /// The bit buffer.
+    bit_buffer: u16,
 
     /// The current number of bits in a code.
     ///
@@ -59,11 +79,11 @@ where
             wc: Vec::new(),
             w: Vec::new(),
             enlarge_in: 2,
-            num_bits: 2,
 
-            // result: Vec::new(),
             output: Vec::new(),
-            val: 0,
+            bit_buffer: 0,
+
+            num_bits: START_NUM_BITS,
 
             bit_position: 0,
             bits_per_char,
@@ -76,10 +96,10 @@ where
         if self.dictionary_to_create.contains(&self.w) {
             let first_w_char = self.w[0];
             if first_w_char < 256 {
-                self.write_bits(self.num_bits, 0);
+                self.write_bits(self.num_bits, U8_CODE);
                 self.write_bits(8, first_w_char.into());
             } else {
-                self.write_bits(self.num_bits, 1);
+                self.write_bits(self.num_bits, U16_CODE);
                 self.write_bits(16, first_w_char.into());
             }
             self.decrement_enlarge_in();
@@ -90,15 +110,18 @@ where
         self.decrement_enlarge_in();
     }
 
+    /// Append the bit to the bit buffer.
     #[inline]
-    pub fn write_bit(&mut self, value: bool) {
-        self.val = (self.val << 1) | u16::from(value);
+    pub fn write_bit(&mut self, bit: bool) {
+        self.bit_buffer = (self.bit_buffer << 1) | u16::from(bit);
         self.bit_position += 1;
+
         if self.bit_position == self.bits_per_char {
             self.bit_position = 0;
-            let char_data = (self.to_char)(self.val);
-            self.output.push(char_data);
-            self.val = 0;
+            let output_char = (self.to_char)(self.bit_buffer);
+            self.bit_buffer = 0;
+
+            self.output.push(output_char);
         }
     }
 
@@ -124,8 +147,10 @@ where
     pub fn write_u16(&mut self, c: u16) {
         let c = vec![c];
         if !self.dictionary.contains_key(&c) {
-            self.dictionary
-                .insert(c.clone(), (self.dictionary.len() + 3).try_into().unwrap());
+            self.dictionary.insert(
+                c.clone(),
+                (self.dictionary.len() + NUM_BASE_CODES).try_into().unwrap(),
+            );
             self.dictionary_to_create.insert(c.clone());
         }
 
@@ -138,7 +163,7 @@ where
             // Add wc to the dictionary.
             self.dictionary.insert(
                 self.wc.clone(),
-                (self.dictionary.len() + 3).try_into().unwrap(),
+                (self.dictionary.len() + NUM_BASE_CODES).try_into().unwrap(),
             );
             self.w = c;
         }
