@@ -16,9 +16,10 @@ pub(crate) struct CompressContext<F> {
 
     /// The current number of bits in a code.
     ///
-    /// This is a 32,
-    /// because in practice there is no sensibe reason to have a code over u32::MAX bytes in length.
-    num_bits: u32,
+    /// This is a u8,
+    /// because we currently assume the max code size is 32 bits.
+    /// 32 < u8::MAX
+    num_bits: u8,
 
     // result: Vec<u16>,
 
@@ -103,7 +104,7 @@ where
     }
 
     #[inline]
-    pub fn write_bits(&mut self, n: u32, mut value: u32) {
+    pub fn write_bits(&mut self, n: u8, mut value: u32) {
         for _ in 0..n {
             self.write_bit(value & 1);
             value >>= 1;
@@ -114,7 +115,7 @@ where
     pub fn decrement_enlarge_in(&mut self) {
         self.enlarge_in -= 1;
         if self.enlarge_in == 0 {
-            self.enlarge_in = 2_usize.pow(self.num_bits);
+            self.enlarge_in = 2_usize.pow(self.num_bits.into());
             self.num_bits += 1;
         }
     }
