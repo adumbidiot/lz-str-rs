@@ -4,6 +4,7 @@ use crate::constants::URI_KEY;
 use crate::IntoWideIter;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::convert::TryInto;
 
 #[derive(Debug)]
 pub(crate) struct CompressContext<F> {
@@ -48,10 +49,10 @@ where
     /// Make a new [`CompressContext`].
     ///
     /// # Panics
-    /// Panics if `bits_per_char` exceeds 16.
+    /// Panics if `bits_per_char` exceeds the number of bits in a u16.
     #[inline]
     pub fn new(bits_per_char: u8, to_char: F) -> Self {
-        assert!(bits_per_char <= 16);
+        assert!(usize::from(bits_per_char) <= std::mem::size_of::<u16>() * 8);
 
         CompressContext {
             dictionary: HashMap::with_capacity(16),
@@ -92,8 +93,8 @@ where
     }
 
     #[inline]
-    pub fn write_bit(&mut self, value: u32) {
-        self.val = (self.val << 1) | (value as u16);
+    pub fn write_bit(&mut self, value: bool) {
+        self.val = (self.val << 1) | u16::from(value);
         self.bit_position += 1;
         if self.bit_position == self.bits_per_char {
             self.bit_position = 0;
@@ -106,7 +107,7 @@ where
     #[inline]
     pub fn write_bits(&mut self, n: u8, mut value: u32) {
         for _ in 0..n {
-            self.write_bit(value & 1);
+            self.write_bit(value & 1 == 1);
             value >>= 1;
         }
     }
@@ -125,7 +126,8 @@ where
     pub fn write_u16(&mut self, c: u16) {
         let c = vec![c];
         if !self.dictionary.contains_key(&c) {
-            self.dictionary.insert(c.clone(), self.dict_size as u32);
+            self.dictionary
+                .insert(c.clone(), self.dict_size.try_into().unwrap());
             self.dict_size += 1;
             self.dictionary_to_create.insert(c.clone());
         }
@@ -138,7 +140,7 @@ where
             self.produce_w();
             // Add wc to the dictionary.
             self.dictionary
-                .insert(self.wc.clone(), self.dict_size as u32);
+                .insert(self.wc.clone(), self.dict_size.try_into().unwrap());
             self.dict_size += 1;
             self.w = c;
         }
@@ -158,7 +160,7 @@ where
         let str_len = self.output.len();
         // Flush the last char
         while self.output.len() == str_len {
-            self.write_bit(0);
+            self.write_bit(false);
         }
 
         self.output
