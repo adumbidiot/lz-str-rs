@@ -22,7 +22,7 @@ const U16_CODE: u32 = 1;
 
 /// The number of "base codes",
 /// the default codes of all streams.
-/// 
+///
 /// These are U8_CODE, U16_CODE, and CLOSE_CODE.
 const NUM_BASE_CODES: usize = 3;
 
