@@ -49,4 +49,5 @@ jobs:
         run: pip install maturin
         
       - name: Build Wheel
+        working-directory: bindings/lz-str-py
         run: maturin build --release
