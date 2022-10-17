@@ -30,7 +30,7 @@ const NUM_BASE_CODES: usize = 3;
 pub(crate) struct CompressContext<'a, F> {
     dictionary: HashMap<Vec<u16>, u32>,
     dictionary_to_create: HashSet<Vec<u16>>,
-    wc: Vec<u16>,
+
     w: Vec<u16>,
     enlarge_in: usize,
 
@@ -80,7 +80,6 @@ where
             dictionary: HashMap::with_capacity(16),
             dictionary_to_create: HashSet::with_capacity(16),
 
-            wc: Vec::new(),
             w: Vec::new(),
             enlarge_in: 2,
 
@@ -160,15 +159,15 @@ where
             self.dictionary_to_create.insert(c.to_vec());
         }
 
-        self.wc = self.w.clone();
-        self.wc.extend(c);
-        if self.dictionary.contains_key(&self.wc) {
-            self.w = std::mem::take(&mut self.wc);
+        let mut wc = self.w.clone();
+        wc.extend(c);
+        if self.dictionary.contains_key(&wc) {
+            self.w = wc;
         } else {
             self.produce_w();
             // Add wc to the dictionary.
             self.dictionary.insert(
-                self.wc.to_vec(),
+                wc.to_vec(),
                 (self.dictionary.len() + NUM_BASE_CODES).try_into().unwrap(),
             );
             self.w = c.to_vec();
