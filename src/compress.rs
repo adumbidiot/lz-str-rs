@@ -28,10 +28,13 @@ const NUM_BASE_CODES: usize = 3;
 
 #[derive(Debug)]
 pub(crate) struct CompressContext<'a, F> {
-    dictionary: HashMap<Vec<u16>, u32>,
-    dictionary_to_create: HashSet<Vec<u16>>,
+    dictionary: HashMap<&'a [u16], u32>,
+    dictionary_to_create: HashSet<&'a [u16]>,
 
-    w: Vec<u16>,
+    // w: &'a [u16],
+    w_start_idx: usize,
+    w_end_idx: usize,
+
     enlarge_in: usize,
 
     /// The input buffer.
@@ -80,7 +83,10 @@ where
             dictionary: HashMap::with_capacity(16),
             dictionary_to_create: HashSet::with_capacity(16),
 
-            w: Vec::new(),
+            w_start_idx: 0,
+            w_end_idx: 0,
+
+            // w: &[],
             enlarge_in: 2,
 
             input,
@@ -98,8 +104,9 @@ where
 
     #[inline]
     pub fn produce_w(&mut self) {
-        if self.dictionary_to_create.contains(&self.w) {
-            let first_w_char = self.w[0];
+        let w = &self.input[self.w_start_idx..self.w_end_idx];
+        if self.dictionary_to_create.contains(w) {
+            let first_w_char = w[0];
             if first_w_char < 256 {
                 self.write_bits(self.num_bits, U8_CODE);
                 self.write_bits(8, first_w_char.into());
@@ -108,9 +115,9 @@ where
                 self.write_bits(16, first_w_char.into());
             }
             self.decrement_enlarge_in();
-            self.dictionary_to_create.remove(&self.w);
+            self.dictionary_to_create.remove(w);
         } else {
-            self.write_bits(self.num_bits, *self.dictionary.get(&self.w).unwrap());
+            self.write_bits(self.num_bits, *self.dictionary.get(w).unwrap());
         }
         self.decrement_enlarge_in();
     }
@@ -149,36 +156,42 @@ where
 
     /// Compress a `u16`. This represents a wide char.
     #[inline]
-    pub fn write_u16(&mut self, c: &'a u16) {
-        let c = std::slice::from_ref(c);
+    pub fn write_u16(&mut self, i: usize) {
+        let c = &self.input[i..i + 1];
         if !self.dictionary.contains_key(c) {
             self.dictionary.insert(
-                c.to_vec(),
+                c,
                 (self.dictionary.len() + NUM_BASE_CODES).try_into().unwrap(),
             );
-            self.dictionary_to_create.insert(c.to_vec());
+            self.dictionary_to_create.insert(c);
         }
 
-        let mut wc = self.w.clone();
-        wc.extend(c);
-        if self.dictionary.contains_key(&wc) {
-            self.w = wc;
+        //let mut wc = self.w.to_vec();
+        //wc.extend(c);
+        let wc = &self.input[self.w_start_idx..self.w_end_idx + 1];
+        if self.dictionary.contains_key(wc) {
+            // self.w = wc;
+            self.w_end_idx += 1;
         } else {
             self.produce_w();
             // Add wc to the dictionary.
             self.dictionary.insert(
-                wc.to_vec(),
+                wc,
                 (self.dictionary.len() + NUM_BASE_CODES).try_into().unwrap(),
             );
-            self.w = c.to_vec();
+            // self.w = c;
+            self.w_start_idx = i;
+            self.w_end_idx = i + 1;
         }
     }
 
     /// Finish the stream and get the final result.
     #[inline]
     pub fn finish(mut self) -> Vec<u16> {
+        let w = &self.input[self.w_start_idx..self.w_end_idx];
+
         // Output the code for w.
-        if !self.w.is_empty() {
+        if !w.is_empty() {
             self.produce_w();
         }
 
@@ -196,8 +209,8 @@ where
 
     /// Perform the compression and return the result.
     pub fn compress(mut self) -> Vec<u16> {
-        for c in self.input {
-            self.write_u16(c);
+        for i in 0..self.input.len() {
+            self.write_u16(i);
         }
         self.finish()
     }
