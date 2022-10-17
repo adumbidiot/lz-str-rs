@@ -27,12 +27,15 @@ const U16_CODE: u32 = 1;
 const NUM_BASE_CODES: usize = 3;
 
 #[derive(Debug)]
-pub(crate) struct CompressContext<F> {
+pub(crate) struct CompressContext<'a, F> {
     dictionary: HashMap<Vec<u16>, u32>,
     dictionary_to_create: HashSet<Vec<u16>>,
     wc: Vec<u16>,
     w: Vec<u16>,
     enlarge_in: usize,
+
+    /// The input buffer.
+    input: &'a [u16],
 
     /// The output buffer.
     output: Vec<u16>,
@@ -61,7 +64,7 @@ pub(crate) struct CompressContext<F> {
     to_char: F,
 }
 
-impl<F> CompressContext<F>
+impl<'a, F> CompressContext<'a, F>
 where
     F: Fn(u16) -> u16,
 {
@@ -70,17 +73,20 @@ where
     /// # Panics
     /// Panics if `bits_per_char` exceeds the number of bits in a u16.
     #[inline]
-    pub fn new(bits_per_char: u8, to_char: F) -> Self {
+    pub fn new(input: &'a [u16], bits_per_char: u8, to_char: F) -> Self {
         assert!(usize::from(bits_per_char) <= std::mem::size_of::<u16>() * 8);
 
         CompressContext {
             dictionary: HashMap::with_capacity(16),
             dictionary_to_create: HashSet::with_capacity(16),
+
             wc: Vec::new(),
             w: Vec::new(),
             enlarge_in: 2,
 
-            output: Vec::new(),
+            input,
+            output: Vec::with_capacity(64),
+
             bit_buffer: 0,
 
             num_bits: START_NUM_BITS,
@@ -144,28 +150,28 @@ where
 
     /// Compress a `u16`. This represents a wide char.
     #[inline]
-    pub fn write_u16(&mut self, c: u16) {
-        let c = vec![c];
-        if !self.dictionary.contains_key(&c) {
+    pub fn write_u16(&mut self, c: &'a u16) {
+        let c = std::slice::from_ref(c);
+        if !self.dictionary.contains_key(c) {
             self.dictionary.insert(
-                c.clone(),
+                c.to_vec(),
                 (self.dictionary.len() + NUM_BASE_CODES).try_into().unwrap(),
             );
-            self.dictionary_to_create.insert(c.clone());
+            self.dictionary_to_create.insert(c.to_vec());
         }
 
         self.wc = self.w.clone();
-        self.wc.extend(&c);
+        self.wc.extend(c);
         if self.dictionary.contains_key(&self.wc) {
             self.w = std::mem::take(&mut self.wc);
         } else {
             self.produce_w();
             // Add wc to the dictionary.
             self.dictionary.insert(
-                self.wc.clone(),
+                self.wc.to_vec(),
                 (self.dictionary.len() + NUM_BASE_CODES).try_into().unwrap(),
             );
-            self.w = c;
+            self.w = c.to_vec();
         }
     }
 
@@ -187,6 +193,14 @@ where
         }
 
         self.output
+    }
+
+    /// Perform the compression and return the result.
+    pub fn compress(mut self) -> Vec<u16> {
+        for c in self.input {
+            self.write_u16(c);
+        }
+        self.finish()
     }
 }
 
@@ -261,7 +275,7 @@ where
     I: Iterator<Item = u16>,
     F: Fn(u16) -> u16,
 {
-    let mut ctx = CompressContext::new(bits_per_char, to_char);
-    uncompressed.for_each(|c| ctx.write_u16(c));
-    ctx.finish()
+    let input: Vec<u16> = uncompressed.collect();
+    let ctx = CompressContext::new(&input, bits_per_char, to_char);
+    ctx.compress()
 }
