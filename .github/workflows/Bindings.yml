@@ -38,3 +38,16 @@ jobs:
       - name: Run Tests
         working-directory: bindings/lz-str-wasm/binding-tests
         run: npm test
+        
+  Python:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Install Maturin
+        run: pip install maturin
+        
+      - name: Build Wheel
+        working-directory: bindings/lz-str-py
+        run: maturin build --release

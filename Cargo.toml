@@ -39,3 +39,9 @@ harness = false
 members = [
     "bindings/*",
 ]
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
