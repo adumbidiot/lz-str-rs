@@ -36,7 +36,7 @@ where
 
     #[inline]
     pub fn read_bit(&mut self) -> Option<bool> {
-        let res = self.val & (self.position as u16);
+        let res: u16 = self.val & (u16::try_from(self.position).unwrap());
         self.position >>= 1;
 
         if self.position == 0 {
@@ -50,10 +50,13 @@ where
     #[inline]
     pub fn read_bits(&mut self, n: usize) -> Option<u32> {
         let mut res = 0;
-        let max_power = 2_u32.pow(n as u32);
-        let mut power = 1;
+        if n > 18 {
+            dbg!(n);
+        }
+        let max_power: usize = 1 << n; // 2_usize.pow(n as u32);
+        let mut power: usize = 1;
         while power != max_power {
-            res |= u32::from(self.read_bit()?) * power;
+            res |= u32::from(self.read_bit()?) * (power as u32);
             power <<= 1;
         }
 
@@ -182,10 +185,10 @@ where
     }
 
     let next = ctx.read_bits(2)?;
-    let first_entry: u16 = match next as u16 {
+    let first_entry: u16 = match u16::try_from(next).unwrap() {
         0 | 1 => {
-            let bits_to_read = (next * 8) + 8;
-            ctx.read_bits(bits_to_read as usize)? as u16
+            let bits_to_read: usize = ((next * 8) + 8).try_into().unwrap();
+            ctx.read_bits(bits_to_read)?.try_into().unwrap()
         }
         CLOSE_CODE => return Some(Vec::new()),
         _ => return None,
@@ -194,37 +197,37 @@ where
 
     let mut w = vec![first_entry];
     let mut result = vec![first_entry];
-    let mut num_bits = 3;
-    let mut enlarge_in = 4;
-    let mut dict_size = 4;
+    let mut num_bits: u8 = 3;
+    let mut enlarge_in: usize = 4;
+    let mut dict_size: u32 = 4;
     let mut entry;
     loop {
-        let mut cc = ctx.read_bits(num_bits)? as usize;
-        match cc as u16 {
-            0 | 1 => {
-                let bits_to_read = (cc * 8) + 8;
+        let mut cc = ctx.read_bits(num_bits.into())?.try_into().unwrap();
+        match u16::try_from(cc) {
+            Ok(0 | 1) => {
+                let bits_to_read: usize = (cc * 8) + 8;
                 // if cc == 0 {
                 // if (errorCount++ > 10000) return "Error"; // TODO: Error logic
                 // }
 
-                let bits = ctx.read_bits(bits_to_read)? as u16;
+                let bits: u16 = ctx.read_bits(bits_to_read)?.try_into().unwrap();
                 dictionary.push(vec![bits]);
                 dict_size += 1;
-                cc = dict_size - 1;
+                cc = (dict_size - 1) as usize;
                 enlarge_in -= 1;
             }
-            CLOSE_CODE => return Some(result),
+            Ok(CLOSE_CODE) => return Some(result),
             _ => {}
         }
 
         if enlarge_in == 0 {
-            enlarge_in = 2_u32.pow(num_bits as u32);
+            enlarge_in = 2_usize.pow(num_bits as u32);
             num_bits += 1;
         }
 
         if let Some(entry_value) = dictionary.get(cc) {
             entry = entry_value.clone();
-        } else if cc == dict_size {
+        } else if cc == dict_size as usize {
             entry = w.clone();
             entry.push(*w.first()?);
         } else {
@@ -243,7 +246,7 @@ where
         w = entry;
 
         if enlarge_in == 0 {
-            enlarge_in = 2_u32.pow(num_bits as u32);
+            enlarge_in = 2_usize.pow(num_bits as u32);
             num_bits += 1;
         }
     }
