@@ -48,7 +48,7 @@ where
     ///
     /// `u32` is the return type as we expect all possible codes to be within that type's range.
     #[inline]
-    pub fn read_bits(&mut self, n: usize) -> Option<u32> {
+    pub fn read_bits(&mut self, n: u8) -> Option<u32> {
         let mut res = 0;
         let max_power: u32 = 1 << n;
         let mut power: u32 = 1;
@@ -181,11 +181,12 @@ where
         dictionary.push(vec![i]);
     }
 
-    let next = ctx.read_bits(2)?;
-    let first_entry: u16 = match u16::try_from(next).unwrap() {
+    // u8::MAX > u2::MAX
+    let code = u8::try_from(ctx.read_bits(2)?).unwrap();
+    let first_entry: u16 = match code {
         0 | 1 => {
-            let bits_to_read: usize = ((next * 8) + 8).try_into().unwrap();
-            ctx.read_bits(bits_to_read)?.try_into().unwrap()
+            let bits_to_read = (code * 8) + 8;
+            ctx.read_bits(bits_to_read)?.try_into().ok()?
         }
         CLOSE_CODE => return Some(Vec::new()),
         _ => return None,
@@ -199,10 +200,10 @@ where
     let mut dict_size: u32 = 4;
     let mut entry;
     loop {
-        let mut cc = ctx.read_bits(num_bits.into())?.try_into().unwrap();
-        match u16::try_from(cc) {
-            Ok(0 | 1) => {
-                let bits_to_read: usize = (cc * 8) + 8;
+        let mut code = ctx.read_bits(num_bits)?.try_into().unwrap();
+        match u8::try_from(code) {
+            Ok(code_u8 @ (0 | 1)) => {
+                let bits_to_read: u8 = (code_u8 * 8) + 8;
                 // if cc == 0 {
                 // if (errorCount++ > 10000) return "Error"; // TODO: Error logic
                 // }
@@ -210,7 +211,7 @@ where
                 let bits: u16 = ctx.read_bits(bits_to_read)?.try_into().unwrap();
                 dictionary.push(vec![bits]);
                 dict_size += 1;
-                cc = (dict_size - 1) as usize;
+                code = (dict_size - 1) as usize;
                 enlarge_in -= 1;
             }
             Ok(CLOSE_CODE) => return Some(result),
@@ -222,9 +223,9 @@ where
             num_bits += 1;
         }
 
-        if let Some(entry_value) = dictionary.get(cc) {
+        if let Some(entry_value) = dictionary.get(code) {
             entry = entry_value.clone();
-        } else if cc == dict_size as usize {
+        } else if code == dict_size as usize {
             entry = w.clone();
             entry.push(*w.first()?);
         } else {
