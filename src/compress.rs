@@ -29,7 +29,7 @@ const NUM_BASE_CODES: usize = 3;
 #[derive(Debug)]
 pub(crate) struct CompressContext<'a, F> {
     dictionary: HashMap<&'a [u16], u32>,
-    dictionary_to_create: HashSet<&'a [u16]>,
+    dictionary_to_create: HashSet<u16>,
 
     /// The current word, w,
     /// in terms of indexes into the input.
@@ -105,19 +105,24 @@ where
     #[inline]
     pub fn produce_w(&mut self) {
         let w = &self.input[self.w_start_idx..self.w_end_idx];
-        if self.dictionary_to_create.contains(w) {
-            let first_w_char = w[0];
-            if first_w_char < 256 {
-                self.write_bits(self.num_bits, U8_CODE);
-                self.write_bits(8, first_w_char.into());
-            } else {
-                self.write_bits(self.num_bits, U16_CODE);
-                self.write_bits(16, first_w_char.into());
+
+        match w
+            .first()
+            .map(|first_w_char| self.dictionary_to_create.take(first_w_char))
+        {
+            Some(Some(first_w_char)) => {
+                if first_w_char < 256 {
+                    self.write_bits(self.num_bits, U8_CODE);
+                    self.write_bits(8, first_w_char.into());
+                } else {
+                    self.write_bits(self.num_bits, U16_CODE);
+                    self.write_bits(16, first_w_char.into());
+                }
+                self.decrement_enlarge_in();
             }
-            self.decrement_enlarge_in();
-            self.dictionary_to_create.remove(w);
-        } else {
-            self.write_bits(self.num_bits, *self.dictionary.get(w).unwrap());
+            None | Some(None) => {
+                self.write_bits(self.num_bits, *self.dictionary.get(w).unwrap());
+            }
         }
         self.decrement_enlarge_in();
     }
@@ -149,7 +154,7 @@ where
     pub fn decrement_enlarge_in(&mut self) {
         self.enlarge_in -= 1;
         if self.enlarge_in == 0 {
-            self.enlarge_in = 2_usize.pow(self.num_bits.into());
+            self.enlarge_in = 1 << self.num_bits;
             self.num_bits += 1;
         }
     }
@@ -157,13 +162,13 @@ where
     /// Compress a `u16`. This represents a wide char.
     #[inline]
     pub fn write_u16(&mut self, i: usize) {
-        let c = std::slice::from_ref(&self.input[i]);
-        if !self.dictionary.contains_key(c) {
+        let c = &self.input[i];
+        if !self.dictionary.contains_key(std::slice::from_ref(c)) {
             self.dictionary.insert(
-                c,
+                std::slice::from_ref(c),
                 (self.dictionary.len() + NUM_BASE_CODES).try_into().unwrap(),
             );
-            self.dictionary_to_create.insert(c);
+            self.dictionary_to_create.insert(*c);
         }
 
         // wc = w + c.
