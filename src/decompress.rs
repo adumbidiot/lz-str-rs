@@ -1,3 +1,6 @@
+// TODO: Disable this
+#![allow(clippy::cast_possible_truncation)]
+
 use crate::constants::BASE64_KEY;
 use crate::constants::CLOSE_CODE;
 use crate::constants::URI_KEY;
