@@ -35,4 +35,8 @@ fn valid_long_input_round() {
             assert_eq!(a, b, "[index={}] {} != {}", i, a, b);
         }
     }
+    assert_eq!(compressed, js_compressed);
+
+    let decompressed = lz_str::decompress(&compressed).expect("decompression failed");
+    assert_eq!(decompressed, data);
 }
