@@ -1,6 +1,6 @@
 [package]
 name = "lz-str"
-version = "0.1.0"
+version = "0.2.0"
 authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
 edition = "2018"
 description = "A port of lz-string to Rust"
@@ -15,6 +15,9 @@ exclude = [
     "scripts/*",
     "js-test/*",
     ".github/*",
+    "Makefile",
+    "deny.toml",
+    "bindings",
 ]
 
 [dependencies]
