@@ -1,5 +1,6 @@
 use crate::constants::BASE64_KEY;
 use crate::constants::CLOSE_CODE;
+use crate::constants::START_CODE_BITS;
 use crate::constants::U16_CODE;
 use crate::constants::U8_CODE;
 use crate::constants::URI_KEY;
@@ -184,7 +185,7 @@ where
     }
 
     // u8::MAX > u2::MAX
-    let code = u8::try_from(ctx.read_bits(2)?).unwrap();
+    let code = u8::try_from(ctx.read_bits(START_CODE_BITS)?).unwrap();
     let first_entry = match code {
         U8_CODE | U16_CODE => {
             let bits_to_read = (code * 8) + 8;
@@ -199,7 +200,7 @@ where
     let mut w = vec![first_entry];
     let mut result = vec![first_entry];
     let mut num_bits: u8 = 3;
-    let mut enlarge_in: usize = 4;
+    let mut enlarge_in: u64 = 4;
     let mut entry;
     loop {
         let mut code = ctx.read_bits(num_bits)?;
