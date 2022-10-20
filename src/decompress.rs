@@ -183,10 +183,11 @@ where
 
     // u8::MAX > u2::MAX
     let code = u8::try_from(ctx.read_bits(2)?).unwrap();
-    let first_entry: u16 = match code {
+    let first_entry = match code {
         0 | 1 => {
             let bits_to_read = (code * 8) + 8;
-            ctx.read_bits(bits_to_read)?.try_into().ok()?
+            // bits_to_read == 8 or 16 <= 16
+            u16::try_from(ctx.read_bits(bits_to_read)?).unwrap()
         }
         CLOSE_CODE => return Some(Vec::new()),
         _ => return None,
@@ -197,7 +198,6 @@ where
     let mut result = vec![first_entry];
     let mut num_bits: u8 = 3;
     let mut enlarge_in: usize = 4;
-    let mut dict_size: u32 = 4;
     let mut entry;
     loop {
         let mut code = ctx.read_bits(num_bits)?;
@@ -211,8 +211,7 @@ where
                 // bits_to_read == 8 or 16 <= 16
                 let bits: u16 = u16::try_from(ctx.read_bits(bits_to_read)?).unwrap();
                 dictionary.push(vec![bits]);
-                dict_size += 1;
-                code = u32::try_from(dict_size - 1).ok()?;
+                code = u32::try_from(dictionary.len() - 1).ok()?;
                 enlarge_in -= 1;
             }
             Ok(CLOSE_CODE) => return Some(result),
@@ -225,9 +224,10 @@ where
         }
 
         // Return error if code cannot be converted to dictionary index
-        if let Some(entry_value) = dictionary.get(usize::try_from(code).ok()?) {
+        let code_usize = usize::try_from(code).ok()?;
+        if let Some(entry_value) = dictionary.get(code_usize) {
             entry = entry_value.clone();
-        } else if code == dict_size {
+        } else if code_usize == dictionary.len() {
             entry = w.clone();
             entry.push(*w.first()?);
         } else {
@@ -240,7 +240,6 @@ where
         let mut to_be_inserted = w.clone();
         to_be_inserted.push(*entry.first()?);
         dictionary.push(to_be_inserted);
-        dict_size += 1;
         enlarge_in -= 1;
 
         w = entry;
