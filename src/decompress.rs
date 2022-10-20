@@ -1,6 +1,3 @@
-// TODO: Disable this
-#![allow(clippy::cast_possible_truncation)]
-
 use crate::constants::BASE64_KEY;
 use crate::constants::CLOSE_CODE;
 use crate::constants::URI_KEY;
@@ -47,16 +44,16 @@ where
         Some(res != 0)
     }
 
+    /// Read n bits.
+    ///
+    /// `u32` is the return type as we expect all possible codes to be within that type's range.
     #[inline]
     pub fn read_bits(&mut self, n: usize) -> Option<u32> {
         let mut res = 0;
-        if n > 18 {
-            dbg!(n);
-        }
-        let max_power: usize = 1 << n; // 2_usize.pow(n as u32);
-        let mut power: usize = 1;
+        let max_power: u32 = 1 << n;
+        let mut power: u32 = 1;
         while power != max_power {
-            res |= u32::from(self.read_bit()?) * (power as u32);
+            res |= u32::from(self.read_bit()?) * power;
             power <<= 1;
         }
 
@@ -165,11 +162,11 @@ pub fn decompress_from_uint8_array(compressed: &[u8]) -> Option<Vec<u16>> {
 /// # Panics
 /// Panics if `bits_per_char` is greater than the number of bits in a `u16`.
 #[inline]
-pub fn decompress_internal<I>(compressed: I, bits_per_char: usize) -> Option<Vec<u16>>
+pub fn decompress_internal<I>(compressed: I, bits_per_char: u8) -> Option<Vec<u16>>
 where
     I: Iterator<Item = u16>,
 {
-    assert!(bits_per_char <= std::mem::size_of::<u16>() * 8);
+    assert!(usize::from(bits_per_char) <= std::mem::size_of::<u16>() * 8);
 
     // u16::MAX < u32::MAX
     let reset_val_pow = u32::try_from(bits_per_char).unwrap() - 1;
@@ -221,7 +218,7 @@ where
         }
 
         if enlarge_in == 0 {
-            enlarge_in = 2_usize.pow(num_bits as u32);
+            enlarge_in = 1 << num_bits;
             num_bits += 1;
         }
 
@@ -246,7 +243,7 @@ where
         w = entry;
 
         if enlarge_in == 0 {
-            enlarge_in = 2_usize.pow(num_bits as u32);
+            enlarge_in = 1 << num_bits;
             num_bits += 1;
         }
     }
