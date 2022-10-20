@@ -1,5 +1,7 @@
 use crate::constants::BASE64_KEY;
 use crate::constants::CLOSE_CODE;
+use crate::constants::U16_CODE;
+use crate::constants::U8_CODE;
 use crate::constants::URI_KEY;
 use crate::IntoWideIter;
 use std::convert::TryFrom;
@@ -169,14 +171,14 @@ where
     assert!(usize::from(bits_per_char) <= std::mem::size_of::<u16>() * 8);
 
     // u16::MAX < u32::MAX
-    let reset_val_pow = u32::try_from(bits_per_char).unwrap() - 1;
-    let reset_val = 2_usize.pow(reset_val_pow);
+    let reset_val_pow = bits_per_char - 1;
+    let reset_val = 1 << reset_val_pow;
     let mut ctx = match DecompressContext::new(compressed, reset_val) {
         Some(ctx) => ctx,
         None => return Some(Vec::new()),
     };
 
-    let mut dictionary: Vec<Vec<u16>> = Vec::with_capacity(3);
+    let mut dictionary: Vec<Vec<u16>> = Vec::with_capacity(16);
     for i in 0_u16..3_u16 {
         dictionary.push(vec![i]);
     }
@@ -184,7 +186,7 @@ where
     // u8::MAX > u2::MAX
     let code = u8::try_from(ctx.read_bits(2)?).unwrap();
     let first_entry = match code {
-        0 | 1 => {
+        U8_CODE | U16_CODE => {
             let bits_to_read = (code * 8) + 8;
             // bits_to_read == 8 or 16 <= 16
             u16::try_from(ctx.read_bits(bits_to_read)?).unwrap()
@@ -202,14 +204,14 @@ where
     loop {
         let mut code = ctx.read_bits(num_bits)?;
         match u8::try_from(code) {
-            Ok(code_u8 @ (0 | 1)) => {
+            Ok(code_u8 @ (U8_CODE | U16_CODE)) => {
                 let bits_to_read = (code_u8 * 8) + 8;
                 // if cc == 0 {
                 // if (errorCount++ > 10000) return "Error"; // TODO: Error logic
                 // }
 
                 // bits_to_read == 8 or 16 <= 16
-                let bits: u16 = u16::try_from(ctx.read_bits(bits_to_read)?).unwrap();
+                let bits = u16::try_from(ctx.read_bits(bits_to_read)?).unwrap();
                 dictionary.push(vec![bits]);
                 code = u32::try_from(dictionary.len() - 1).ok()?;
                 enlarge_in -= 1;

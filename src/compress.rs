@@ -1,17 +1,13 @@
 use crate::constants::BASE64_KEY;
 use crate::constants::CLOSE_CODE;
 use crate::constants::START_CODE_BITS;
+use crate::constants::U16_CODE;
+use crate::constants::U8_CODE;
 use crate::constants::URI_KEY;
 use crate::IntoWideIter;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::convert::TryInto;
-
-/// The stream code for a `u8`.
-const U8_CODE: u32 = 0;
-
-/// The stream code for a `u16`.
-const U16_CODE: u32 = 1;
 
 /// The number of "base codes",
 /// the default codes of all streams.
@@ -107,10 +103,10 @@ where
         {
             Some(Some(first_w_char)) => {
                 if first_w_char < 256 {
-                    self.write_bits(self.num_bits, U8_CODE);
+                    self.write_bits(self.num_bits, U8_CODE.into());
                     self.write_bits(8, first_w_char.into());
                 } else {
-                    self.write_bits(self.num_bits, U16_CODE);
+                    self.write_bits(self.num_bits, U16_CODE.into());
                     self.write_bits(16, first_w_char.into());
                 }
                 self.decrement_enlarge_in();
