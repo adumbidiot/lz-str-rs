@@ -12,8 +12,8 @@ use std::convert::TryInto;
 pub struct DecompressContext<I> {
     val: u16,
     compressed_data: I,
-    position: usize,
-    reset_val: usize,
+    position: u16,
+    reset_val: u16,
 }
 
 impl<I> DecompressContext<I>
@@ -24,8 +24,17 @@ where
     ///
     /// # Errors
     /// Returns `None` if the iterator is empty.
+    ///
+    /// # Panics
+    /// Panics if `bits_per_char` is greater than the number of bits in a `u16`.
     #[inline]
-    pub fn new(mut compressed_data: I, reset_val: usize) -> Option<Self> {
+    pub fn new(mut compressed_data: I, bits_per_char: u8) -> Option<Self> {
+        assert!(usize::from(bits_per_char) <= std::mem::size_of::<u16>() * 8);
+
+        let reset_val_pow = bits_per_char - 1;
+        // (1 << 15) <= u16::MAX
+        let reset_val: u16 = 1 << reset_val_pow;
+
         Some(DecompressContext {
             val: compressed_data.next()?,
             compressed_data,
@@ -36,7 +45,7 @@ where
 
     #[inline]
     pub fn read_bit(&mut self) -> Option<bool> {
-        let res: u16 = self.val & (u16::try_from(self.position).unwrap());
+        let res = self.val & self.position;
         self.position >>= 1;
 
         if self.position == 0 {
@@ -169,12 +178,7 @@ pub fn decompress_internal<I>(compressed: I, bits_per_char: u8) -> Option<Vec<u1
 where
     I: Iterator<Item = u16>,
 {
-    assert!(usize::from(bits_per_char) <= std::mem::size_of::<u16>() * 8);
-
-    // u16::MAX < u32::MAX
-    let reset_val_pow = bits_per_char - 1;
-    let reset_val = 1 << reset_val_pow;
-    let mut ctx = match DecompressContext::new(compressed, reset_val) {
+    let mut ctx = match DecompressContext::new(compressed, bits_per_char) {
         Some(ctx) => ctx,
         None => return Some(Vec::new()),
     };
