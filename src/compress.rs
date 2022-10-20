@@ -36,7 +36,9 @@ pub(crate) struct CompressContext<'a, F> {
     w_start_idx: usize,
     w_end_idx: usize,
 
-    enlarge_in: usize,
+    // The counter for increasing the current number of bits in a code.
+    // The max size of this is 1 << max(num_bits) == 1 + u32::MAX, so we use u64.
+    enlarge_in: u64,
 
     /// The input buffer.
     input: &'a [u16],
