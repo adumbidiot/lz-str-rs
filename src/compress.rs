@@ -90,7 +90,7 @@ where
             enlarge_in: 2,
 
             input,
-            output: Vec::with_capacity(64),
+            output: Vec::with_capacity(input.len() >> 1), // Lowball, assume we can get a 50% reduction in size.
 
             bit_buffer: 0,
 
