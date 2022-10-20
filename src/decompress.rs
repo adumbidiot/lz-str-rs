@@ -194,7 +194,7 @@ where
         CLOSE_CODE => return Some(Vec::new()),
         _ => return None,
     };
-    dictionary.insert(3, vec![first_entry]);
+    dictionary.push(vec![first_entry]);
 
     let mut w = vec![first_entry];
     let mut result = vec![first_entry];
