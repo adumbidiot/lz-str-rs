@@ -200,18 +200,19 @@ where
     let mut dict_size: u32 = 4;
     let mut entry;
     loop {
-        let mut code = ctx.read_bits(num_bits)?.try_into().unwrap();
+        let mut code = ctx.read_bits(num_bits)?;
         match u8::try_from(code) {
             Ok(code_u8 @ (0 | 1)) => {
-                let bits_to_read: u8 = (code_u8 * 8) + 8;
+                let bits_to_read = (code_u8 * 8) + 8;
                 // if cc == 0 {
                 // if (errorCount++ > 10000) return "Error"; // TODO: Error logic
                 // }
 
-                let bits: u16 = ctx.read_bits(bits_to_read)?.try_into().unwrap();
+                // bits_to_read == 8 or 16 <= 16
+                let bits: u16 = u16::try_from(ctx.read_bits(bits_to_read)?).unwrap();
                 dictionary.push(vec![bits]);
                 dict_size += 1;
-                code = (dict_size - 1) as usize;
+                code = u32::try_from(dict_size - 1).ok()?;
                 enlarge_in -= 1;
             }
             Ok(CLOSE_CODE) => return Some(result),
@@ -223,9 +224,10 @@ where
             num_bits += 1;
         }
 
-        if let Some(entry_value) = dictionary.get(code) {
+        // Return error if code cannot be converted to dictionary index
+        if let Some(entry_value) = dictionary.get(usize::try_from(code).ok()?) {
             entry = entry_value.clone();
-        } else if code == dict_size as usize {
+        } else if code == dict_size {
             entry = w.clone();
             entry.push(*w.first()?);
         } else {
