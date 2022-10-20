@@ -31,7 +31,8 @@ pub(crate) struct CompressContext<'a, F> {
     dictionary: HashMap<&'a [u16], u32>,
     dictionary_to_create: HashSet<&'a [u16]>,
 
-    // w: &'a [u16],
+    /// The current word, w,
+    /// in terms of indexes into the input.
     w_start_idx: usize,
     w_end_idx: usize,
 
@@ -86,7 +87,6 @@ where
             w_start_idx: 0,
             w_end_idx: 0,
 
-            // w: &[],
             enlarge_in: 2,
 
             input,
@@ -157,7 +157,7 @@ where
     /// Compress a `u16`. This represents a wide char.
     #[inline]
     pub fn write_u16(&mut self, i: usize) {
-        let c = &self.input[i..i + 1];
+        let c = std::slice::from_ref(&self.input[i]);
         if !self.dictionary.contains_key(c) {
             self.dictionary.insert(
                 c,
@@ -166,11 +166,10 @@ where
             self.dictionary_to_create.insert(c);
         }
 
-        //let mut wc = self.w.to_vec();
-        //wc.extend(c);
+        // wc = w + c.
         let wc = &self.input[self.w_start_idx..self.w_end_idx + 1];
         if self.dictionary.contains_key(wc) {
-            // self.w = wc;
+            // w = wc.
             self.w_end_idx += 1;
         } else {
             self.produce_w();
@@ -179,7 +178,8 @@ where
                 wc,
                 (self.dictionary.len() + NUM_BASE_CODES).try_into().unwrap(),
             );
-            // self.w = c;
+
+            // w = c.
             self.w_start_idx = i;
             self.w_end_idx = i + 1;
         }
@@ -220,16 +220,18 @@ where
 ///
 /// The resulting [`Vec`] may contain invalid UTF16.
 #[inline]
-pub fn compress(input: impl IntoWideIter) -> Vec<u16> {
-    compress_internal(input.into_wide_iter(), 16, std::convert::identity)
+pub fn compress(data: impl IntoWideIter) -> Vec<u16> {
+    let data: Vec<u16> = data.into_wide_iter().collect();
+    compress_internal(&data, 16, std::convert::identity)
 }
 
 /// Compress a string as a valid [`String`].
 ///
 /// This function converts the result back into a Rust [`String`] since it is guaranteed to be valid UTF16.
 #[inline]
-pub fn compress_to_utf16(input: impl IntoWideIter) -> String {
-    let compressed = compress_internal(input.into_wide_iter(), 15, |n| n + 32);
+pub fn compress_to_utf16(data: impl IntoWideIter) -> String {
+    let data: Vec<u16> = data.into_wide_iter().collect();
+    let compressed = compress_internal(&data, 15, |n| n + 32);
     let mut compressed =
         String::from_utf16(&compressed).expect("`compress_to_utf16 output was not valid unicode`");
     compressed.push(' ');
@@ -242,9 +244,8 @@ pub fn compress_to_utf16(input: impl IntoWideIter) -> String {
 /// This function converts the result back into a Rust [`String`] since it is guaranteed to be valid unicode.
 #[inline]
 pub fn compress_to_encoded_uri_component(data: impl IntoWideIter) -> String {
-    let compressed = compress_internal(data.into_wide_iter(), 6, |n| {
-        u16::from(URI_KEY[usize::from(n)])
-    });
+    let data: Vec<u16> = data.into_wide_iter().collect();
+    let compressed = compress_internal(&data, 6, |n| u16::from(URI_KEY[usize::from(n)]));
 
     String::from_utf16(&compressed)
         .expect("`compress_to_encoded_uri_component` output was not valid unicode`")
@@ -254,9 +255,8 @@ pub fn compress_to_encoded_uri_component(data: impl IntoWideIter) -> String {
 ///
 /// This function converts the result back into a Rust [`String`] since it is guaranteed to be valid unicode.
 pub fn compress_to_base64(data: impl IntoWideIter) -> String {
-    let mut compressed = compress_internal(data.into_wide_iter(), 6, |n| {
-        u16::from(BASE64_KEY[usize::from(n)])
-    });
+    let data: Vec<u16> = data.into_wide_iter().collect();
+    let mut compressed = compress_internal(&data, 6, |n| u16::from(BASE64_KEY[usize::from(n)]));
 
     let mod_4 = compressed.len() % 4;
 
@@ -282,12 +282,10 @@ pub fn compress_to_uint8_array(data: impl IntoWideIter) -> Vec<u8> {
 /// All other compression functions are built on top of this.
 /// It generally should not be used directly.
 #[inline]
-pub fn compress_internal<I, F>(uncompressed: I, bits_per_char: u8, to_char: F) -> Vec<u16>
+pub fn compress_internal<F>(data: &[u16], bits_per_char: u8, to_char: F) -> Vec<u16>
 where
-    I: Iterator<Item = u16>,
     F: Fn(u16) -> u16,
 {
-    let input: Vec<u16> = uncompressed.collect();
-    let ctx = CompressContext::new(&input, bits_per_char, to_char);
+    let ctx = CompressContext::new(data, bits_per_char, to_char);
     ctx.compress()
 }
