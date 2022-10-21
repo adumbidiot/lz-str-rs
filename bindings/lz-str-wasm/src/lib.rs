@@ -3,7 +3,7 @@ use js_sys::Uint16Array;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
-#[wasm_bindgen(module = "/src/inline.js")]
+#[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_name = "convertUint16ArrayToString")]
     fn convert_uint16_array_to_string(array: &Uint16Array) -> JsString;

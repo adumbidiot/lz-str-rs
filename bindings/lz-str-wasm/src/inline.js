@@ -1,6 +1,6 @@
 const CHUNK_SIZE = 10_000;
 
-export function convertUint16ArrayToString(array) {
+function convertUint16ArrayToString(array) {
     let ret = '';
     let num_chunks = Math.ceil(array.length / CHUNK_SIZE);
     for(let i = 0; i < array.length; i += CHUNK_SIZE) {
