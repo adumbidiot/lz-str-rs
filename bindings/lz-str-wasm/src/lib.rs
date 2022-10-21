@@ -1,7 +1,7 @@
 use js_sys::JsString;
+use js_sys::Uint16Array;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use js_sys::Uint16Array;
 
 #[wasm_bindgen(module = "/src/inline.js")]
 extern "C" {
@@ -20,7 +20,7 @@ pub fn compress(data: &JsValue) -> JsValue {
     };
     let data: Vec<u16> = data.iter().collect();
     let compressed = lz_str::compress(&data);
-    let array: Uint16Array = compressed.as_slice().into();    
+    let array: Uint16Array = compressed.as_slice().into();
     convert_uint16_array_to_string(&array).into()
 }
 
