@@ -1,5 +1,7 @@
 # Changelog
 ## [Unreleased]
+### Added
+- Added `IntoWideIter` impl for `&String`
 
 ## [0.2.0] - 2022-10-20
 ### Added
