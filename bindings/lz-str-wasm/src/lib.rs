@@ -33,8 +33,6 @@ pub fn decompress(data: &JsValue) -> JsValue {
     };
     let data: Vec<u16> = data.iter().collect();
     lz_str::decompress(&data)
-        .map(|decompressed| {
-            convert_u16_slice_to_string(&decompressed).into()
-        })
+        .map(|decompressed| convert_u16_slice_to_string(&decompressed).into())
         .unwrap_or(JsValue::NULL)
 }
