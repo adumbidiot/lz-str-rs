@@ -5,9 +5,19 @@ use crate::constants::U16_CODE;
 use crate::constants::U8_CODE;
 use crate::constants::URI_KEY;
 use crate::IntoWideIter;
-use std::collections::HashMap;
-use std::collections::HashSet;
 use std::convert::TryInto;
+
+#[cfg(not(feature = "rustc-hash"))]
+type HashMap<K, V> = std::collections::HashMap<K, V>;
+
+#[cfg(not(feature = "rustc-hash"))]
+type HashSet<T> = std::collections::HashSet<T>;
+
+#[cfg(feature = "rustc-hash")]
+type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
+
+#[cfg(feature = "rustc-hash")]
+type HashSet<T> = rustc_hash::FxHashSet<T>;
 
 /// The number of "base codes",
 /// the default codes of all streams.
