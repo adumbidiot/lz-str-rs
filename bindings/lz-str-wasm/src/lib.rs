@@ -1,12 +1,11 @@
 use js_sys::JsString;
-use js_sys::Uint16Array;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
 #[wasm_bindgen]
 extern "C" {
-    #[wasm_bindgen(js_name = "convertUint16ArrayToString")]
-    fn convert_uint16_array_to_string(array: &Uint16Array) -> JsString;
+    #[wasm_bindgen(js_name = "convertU16SliceToString")]
+    fn convert_u16_slice_to_string(slice: &[u16]) -> JsString;
 }
 
 /// Compress a [`JsString`].
@@ -20,8 +19,7 @@ pub fn compress(data: &JsValue) -> JsValue {
     };
     let data: Vec<u16> = data.iter().collect();
     let compressed = lz_str::compress(&data);
-    let array: Uint16Array = compressed.as_slice().into();
-    convert_uint16_array_to_string(&array).into()
+    convert_u16_slice_to_string(&compressed).into()
 }
 
 /// Decompress a [`JsString`].
@@ -36,8 +34,7 @@ pub fn decompress(data: &JsValue) -> JsValue {
     let data: Vec<u16> = data.iter().collect();
     lz_str::decompress(&data)
         .map(|decompressed| {
-            let array: Uint16Array = decompressed.as_slice().into();
-            convert_uint16_array_to_string(&array).into()
+            convert_u16_slice_to_string(&decompressed).into()
         })
         .unwrap_or(JsValue::NULL)
 }
