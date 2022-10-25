@@ -44,6 +44,10 @@ fn main() {
 
 See the [examples](https://github.com/adumbidiot/lz-str-rs/tree/master/examples) directory for more examples.
 
+## Features
+`rustc-hash`: This feature will replace some internal maps' hashers with rustc-hash, 
+boosting performance at the cost of not using a DOS-resistant hasher.
+
 ## Testing
 ```bash
 cargo test
