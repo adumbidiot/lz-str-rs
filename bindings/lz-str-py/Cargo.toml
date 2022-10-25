@@ -10,3 +10,8 @@ crate-type = [ "cdylib" ]
 [dependencies]
 lz-str = { path = "../.." }
 pyo3 = { version = "0.17.2", features = [ "extension-module", "abi3", "abi3-py37" ] }
+
+[features]
+rustc-hash = [
+    "lz-str/rustc-hash",
+]
