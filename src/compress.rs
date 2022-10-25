@@ -82,8 +82,8 @@ where
         assert!(usize::from(bits_per_char) <= std::mem::size_of::<u16>() * 8);
 
         CompressContext {
-            dictionary: HashMap::with_capacity(16),
-            dictionary_to_create: HashSet::with_capacity(16),
+            dictionary: HashMap::default(),
+            dictionary_to_create: HashSet::default(),
 
             w_start_idx: 0,
             w_end_idx: 0,
