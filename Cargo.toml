@@ -18,6 +18,8 @@ exclude = [
     "Makefile",
     "deny.toml",
     "bindings",
+    "fuzz/*",
+    "test_data/*",
 ]
 
 [dependencies]

@@ -1,0 +1,24 @@
+[package]
+name = "lz-str-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2018"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.lz-str]
+path = ".."
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = [ "." ]
+
+[[bin]]
+name = "compress-decompress"
+path = "fuzz_targets/compress_decompress.rs"
+test = false
+doc = false
