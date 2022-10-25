@@ -84,6 +84,15 @@ impl<'a> IntoWideIter for &&'a str {
     }
 }
 
+impl<'a> IntoWideIter for &'a String {
+    type Iter = std::str::EncodeUtf16<'a>;
+
+    #[inline]
+    fn into_wide_iter(self) -> Self::Iter {
+        self.as_str().encode_utf16()
+    }
+}
+
 impl<'a> IntoWideIter for &'a [u16] {
     type Iter = std::iter::Copied<std::slice::Iter<'a, u16>>;
 
@@ -108,5 +117,61 @@ impl<'a> IntoWideIter for &'a Vec<u16> {
     #[inline]
     fn into_wide_iter(self) -> Self::Iter {
         self.iter().copied()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn into_wide_iter_check() {
+        const DATA: &str = "test argument";
+        let expected: Vec<u16> = DATA.encode_utf16().collect();
+
+        fn check(arg: impl IntoWideIter, expected: &[u16]) {
+            let arg: Vec<u16> = arg.into_wide_iter().collect();
+            assert!(arg == expected);
+        }
+
+        {
+            let data: &str = DATA;
+            check(data, &expected);
+        }
+
+        {
+            let data: &&str = &DATA;
+            check(data, &expected);
+        }
+
+        // TODO: Should IntoWideIter be implemented for String?
+        // It's always better to pass an &str or an &String, so users should be forced to do that?
+        // {
+        //     let data: String = DATA.into();
+        //     check(data, &expected);
+        // }
+
+        {
+            let data: String = DATA.into();
+            let data: &String = &data;
+            check(data, &expected);
+        }
+
+        {
+            let data: Vec<u16> = DATA.encode_utf16().collect();
+            let data: &[u16] = &data;
+            check(data, &expected);
+        }
+
+        {
+            let data: Vec<u16> = DATA.encode_utf16().collect();
+            check(data, &expected);
+        }
+
+        {
+            let data: Vec<u16> = DATA.encode_utf16().collect();
+            let data: &Vec<u16> = &data;
+            check(data, &expected);
+        }
     }
 }
