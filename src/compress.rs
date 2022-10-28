@@ -5,6 +5,7 @@ use crate::constants::U16_CODE;
 use crate::constants::U8_CODE;
 use crate::constants::URI_KEY;
 use crate::IntoWideIter;
+use std::collections::hash_map::Entry as HashMapEntry;
 use std::convert::TryInto;
 
 #[cfg(not(feature = "rustc-hash"))]
@@ -164,11 +165,10 @@ where
     #[inline]
     pub fn write_u16(&mut self, i: usize) {
         let c = &self.input[i];
-        if !self.dictionary.contains_key(std::slice::from_ref(c)) {
-            self.dictionary.insert(
-                std::slice::from_ref(c),
-                (self.dictionary.len() + NUM_BASE_CODES).try_into().unwrap(),
-            );
+
+        let dictionary_len = self.dictionary.len();
+        if let HashMapEntry::Vacant(entry) = self.dictionary.entry(std::slice::from_ref(c)) {
+            entry.insert((dictionary_len + NUM_BASE_CODES).try_into().unwrap());
             self.dictionary_to_create.insert(*c);
         }
 
