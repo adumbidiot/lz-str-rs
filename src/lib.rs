@@ -102,6 +102,8 @@ impl<'a> IntoWideIter for &'a [u16] {
     }
 }
 
+// TODO: Remove this in the next version.
+// We do not benefit from taking ownership of the buffer.
 impl IntoWideIter for Vec<u16> {
     type Iter = std::vec::IntoIter<u16>;
 
