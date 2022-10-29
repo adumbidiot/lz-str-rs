@@ -174,20 +174,26 @@ where
 
         // wc = w + c.
         let wc = &self.input[self.w_start_idx..self.w_end_idx + 1];
-        if self.dictionary.contains_key(wc) {
-            // w = wc.
-            self.w_end_idx += 1;
-        } else {
-            self.produce_w();
-            // Add wc to the dictionary.
-            self.dictionary.insert(
-                wc,
-                (self.dictionary.len() + NUM_BASE_CODES).try_into().unwrap(),
-            );
 
-            // w = c.
-            self.w_start_idx = i;
-            self.w_end_idx = i + 1;
+        let dictionary_len = self.dictionary.len();
+        match self.dictionary.entry(wc) {
+            HashMapEntry::Occupied(_entry) => {
+                // w = wc.
+                self.w_end_idx += 1;
+            }
+            HashMapEntry::Vacant(entry) => {
+                // Add wc to the dictionary.
+                entry.insert((dictionary_len + NUM_BASE_CODES).try_into().unwrap());
+
+                // Originally, this was before adding wc to the dict.
+                // However, we only use the dict for a lookup that will crash if it fails in produce_w.
+                // Therefore, moving it here should be fine.
+                self.produce_w();
+
+                // w = c.
+                self.w_start_idx = i;
+                self.w_end_idx = i + 1;
+            }
         }
     }
 
