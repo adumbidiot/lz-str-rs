@@ -12,7 +12,7 @@ Add the following to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-lz-str = "0.1.0"
+lz-str = "0.2.1"
 ```
 
 ## Getting Started
