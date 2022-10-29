@@ -1,10 +1,10 @@
 # Changelog
 ## [Unreleased]
 
-## [0.2.1] - 2022-10-21
+## [0.2.1] - 2022-10-28
 ### Added
 - Added `IntoWideIter` impl for `&String`
-- Add `rustc-hash` feature to optionally boost speed
+- Add `rustc-hash` feature to optionally boost compression speed
 
 ## [0.2.0] - 2022-10-20
 ### Added
