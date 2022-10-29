@@ -1,7 +1,10 @@
 # Changelog
 ## [Unreleased]
+
+## [0.2.1] - 2022-10-28
 ### Added
 - Added `IntoWideIter` impl for `&String`
+- Add `rustc-hash` feature to optionally boost compression speed
 
 ## [0.2.0] - 2022-10-20
 ### Added
@@ -24,7 +27,7 @@
 ### Fixed
 - Fix issues with compressing and decompressing long, nonrepeating inputs
 
-## [0.0.1] - 2023-01-23
+## [0.1.0] - 2023-01-23
 ### Added
 - Initial port of lz-string to Rust
 - Add `compress`/`decompress` functions
