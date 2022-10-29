@@ -7,7 +7,7 @@ repository = "https://github.com/adumbidiot/lz-str-rs"
 license = "MIT OR Apache-2.0"
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = [ "cdylib", "rlib" ]
 
 [dependencies]
 js-sys = "0.3.47"
@@ -16,3 +16,8 @@ wasm-bindgen = "0.2.70"
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = [ '-O4' ]
+
+[features]
+rustc-hash = [
+    "lz-str/rustc-hash",
+]

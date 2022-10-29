@@ -60,5 +60,11 @@ jobs:
       - name: Build
         run: cargo build --verbose
         
-      - name: Run Tests
+      - name: Build with `rustc-hash`
+        run: cargo build --verbose --features=rustc-hash
+        
+      - name: Run All Tests
         run: cargo test --all --verbose
+        
+      - name: Run Tests for `lz-str` with `rustc-hash`
+        run: cargo test --verbose --features=rustc-hash
