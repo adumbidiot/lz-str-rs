@@ -24,7 +24,7 @@
 ### Fixed
 - Fix issues with compressing and decompressing long, nonrepeating inputs
 
-## [0.0.1] - 2023-01-23
+## [0.1.0] - 2023-01-23
 ### Added
 - Initial port of lz-string to Rust
 - Add `compress`/`decompress` functions
