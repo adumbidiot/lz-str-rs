@@ -7,6 +7,6 @@ fn invalid_decompress() {
     for data in invalid_data {
         eprintln!("Decompressing '{}'", data);
         let arr: Vec<u16> = data.encode_utf16().collect();
-        assert!(decompress(&arr).is_none());
+        assert!(decompress(arr).is_none());
     }
 }

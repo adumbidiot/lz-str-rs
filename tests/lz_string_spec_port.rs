@@ -162,7 +162,7 @@ fn lz_string_uint8_array() {
 fn lz_string_raw() {
     compression_tests(
         |s| lz_str::compress(s).into(),
-        |s| lz_str::decompress(&s.0).map(ByteString::from),
+        |s| lz_str::decompress(s.0).map(ByteString::from),
         false,
     );
 }
@@ -175,9 +175,8 @@ fn specific_url_encoded() {
         write!(&mut test_string, "{} ", rand::thread_rng().gen::<f64>())
             .expect("write rand float to string")
     }
-    let compressed = lz_str::compress_to_encoded_uri_component(
-        &test_string.encode_utf16().collect::<Vec<u16>>(),
-    );
+    let compressed =
+        lz_str::compress_to_encoded_uri_component(test_string.encode_utf16().collect::<Vec<u16>>());
     assert!(!compressed.contains('='));
     assert!(!compressed.contains('/'));
     let decompressed =

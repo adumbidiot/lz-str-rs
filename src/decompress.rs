@@ -160,7 +160,7 @@ pub fn decompress_from_uint8_array(compressed: &[u8]) -> Option<Vec<u16>> {
         })
         .collect();
 
-    decompress(&buffer)
+    decompress(buffer)
 }
 
 /// The internal decompress function.
