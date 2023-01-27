@@ -12,7 +12,7 @@ const TEST_STR_COMPRESSED: &[u16] = &[
 #[test]
 pub fn round_test_uri() {
     let compressed =
-        compress_to_encoded_uri_component(&TEST_STR.encode_utf16().collect::<Vec<u16>>());
+        compress_to_encoded_uri_component(TEST_STR.encode_utf16().collect::<Vec<u16>>());
     assert_eq!(
         &compressed,
         "CoCwpgBAjgrglgYwNYQEYCcD2B3AdhAM0wA8IArGAWwAcBnCTANzHQgBdwIAbAQwC8AnhAAmmAOZA"
@@ -24,20 +24,20 @@ pub fn round_test_uri() {
 
 #[test]
 pub fn round_test() {
-    let compressed = compress(&TEST_STR.encode_utf16().collect::<Vec<u16>>());
-    let decompressed = decompress(&compressed).unwrap();
+    let compressed = compress(TEST_STR.encode_utf16().collect::<Vec<u16>>());
+    let decompressed = decompress(compressed).unwrap();
     assert_eq!(TEST_STR.encode_utf16().collect::<Vec<u16>>(), decompressed);
 }
 
 #[test]
 pub fn compress_test() {
-    let compressed = compress(&TEST_STR.encode_utf16().collect::<Vec<u16>>());
+    let compressed = compress(TEST_STR.encode_utf16().collect::<Vec<u16>>());
     assert_eq!(TEST_STR_COMPRESSED, compressed);
 }
 
 #[test]
 pub fn compress_test_to_utf16() {
-    let compressed = compress_to_utf16(&TEST_STR.encode_utf16().collect::<Vec<u16>>());
+    let compressed = compress_to_utf16(TEST_STR.encode_utf16().collect::<Vec<u16>>());
     assert_eq!("ՠⱉ䀨ऀ圤堸悋Ф〳䄖Ϙށ䰠硠૦Ö<͘ⓠ᮸瑀̎Ƞ㘢ఢ砤硠Ŕ怮㈠ ", compressed);
 }
 
@@ -51,7 +51,7 @@ pub fn decompress_test_to_utf16() {
 #[test]
 pub fn compress_repeat() {
     let data = "aaaaabaaaaacaaaaadaaaaaeaaaaa";
-    let compressed = compress_to_encoded_uri_component(&data.encode_utf16().collect::<Vec<u16>>());
+    let compressed = compress_to_encoded_uri_component(data.encode_utf16().collect::<Vec<u16>>());
     assert_eq!(&compressed, "IYkI1EGNOATWBTWQ");
 }
 
