@@ -59,7 +59,8 @@ cargo bench
 ```
 
 ## Bindings
-[WebAssembly](bindings/lz-str-wasm)
+* [WebAssembly](bindings/lz-str-wasm)
+* [Python](bindings/lz-str-py)
 
 ## Authors
 adumbidiot (Nathaniel Daniel)
