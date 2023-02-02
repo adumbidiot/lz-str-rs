@@ -32,7 +32,7 @@ fn valid_long_input_round() {
 
     for (i, (a, b)) in compressed.iter().zip(js_compressed.iter()).enumerate() {
         if a != b {
-            assert_eq!(a, b, "[index={}] {} != {}", i, a, b);
+            assert_eq!(a, b, "[index={i}] {a} != {b}");
         }
     }
     assert_eq!(compressed, js_compressed);
