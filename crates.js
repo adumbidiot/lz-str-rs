@@ -1,0 +1,1 @@
+window.ALL_CRATES = ["lz_str","lz_str_py","lz_str_wasm"];
