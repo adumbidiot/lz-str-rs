@@ -1,3 +1,4 @@
+[graph]
 targets = [
     { triple = "x86_64-unknown-linux-gnu" },
     { triple = "x86_64-unknown-linux-musl" },
@@ -6,19 +7,16 @@ targets = [
 ]
 
 [advisories]
-vulnerability = "deny"
-unmaintained = "deny"
-notice = "deny"
 ignore = []
 
 [licenses]
-unlicensed = "deny"
-copyleft = "deny"
-allow-osi-fsf-free = "neither"
 confidence-threshold = 0.93
-default = "deny"
 private = { ignore = true }
-allow = [ "Apache-2.0", "MIT", "Unicode-DFS-2016" ]
+allow = [ 
+    "Apache-2.0",
+    "MIT",
+    "Unicode-DFS-2016",
+]
 exceptions = []
 
 [bans]
