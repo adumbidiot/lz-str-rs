@@ -1,10 +1,10 @@
+use crate::IntoWideIter;
 use crate::constants::BASE64_KEY;
 use crate::constants::CLOSE_CODE;
 use crate::constants::START_CODE_BITS;
-use crate::constants::U16_CODE;
 use crate::constants::U8_CODE;
+use crate::constants::U16_CODE;
 use crate::constants::URI_KEY;
-use crate::IntoWideIter;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 

@@ -2,7 +2,7 @@
 name = "lz-str"
 version = "0.2.1"
 authors = [ "adumbidiot <nathaniel.daniel23@outlook.com>" ]
-edition = "2018"
+edition = "2024"
 description = "A port of lz-string to Rust"
 repository = "https://github.com/adumbidiot/lz-str-rs"
 homepage = "https://github.com/adumbidiot/lz-str-rs"
@@ -42,6 +42,7 @@ name = "decompress"
 harness = false
 
 [workspace]
+resolver = "3"
 members = [
     "bindings/*",
 ]

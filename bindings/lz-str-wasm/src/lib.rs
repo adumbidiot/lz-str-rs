@@ -1,6 +1,6 @@
 use js_sys::JsString;
-use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 extern "C" {
