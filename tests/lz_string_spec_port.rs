@@ -90,7 +90,7 @@ where
     eprintln!("Check if it compresses and decompresses a long string");
     let mut test_string = String::new();
     for _ in 0..1000 {
-        write!(&mut test_string, "{} ", rand::thread_rng().gen::<f64>())
+        write!(&mut test_string, "{} ", rand::rng().random::<f64>())
             .expect("write rand float to string")
     }
     let compressed = compress(&test_string.encode_utf16().collect::<Vec<u16>>());
@@ -172,7 +172,7 @@ fn specific_url_encoded() {
     eprintln!("check that all chars are URL safe");
     let mut test_string = String::new();
     for _ in 0..1000 {
-        write!(&mut test_string, "{} ", rand::thread_rng().gen::<f64>())
+        write!(&mut test_string, "{} ", rand::rng().random::<f64>())
             .expect("write rand float to string")
     }
     let compressed =

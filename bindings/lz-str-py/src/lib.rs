@@ -3,13 +3,13 @@ use pyo3::prelude::*;
 use pyo3::types::PyString;
 
 #[pyfunction(name = "compressToBase64")]
-pub fn compress_to_base64(input: &PyString) -> PyResult<String> {
+pub fn compress_to_base64(input: &Bound<PyString>) -> PyResult<String> {
     let input = input.to_str()?;
     Ok(lz_str::compress_to_base64(input))
 }
 
 #[pyfunction(name = "decompressFromBase64")]
-pub fn decompress_from_base64(input: &PyString) -> PyResult<String> {
+pub fn decompress_from_base64(input: &Bound<PyString>) -> PyResult<String> {
     let input = input.to_str()?;
     match lz_str::decompress_from_base64(input) {
         Some(result) => {
@@ -24,7 +24,7 @@ pub fn decompress_from_base64(input: &PyString) -> PyResult<String> {
 }
 
 #[pymodule]
-fn lz_str_py(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+fn lz_str_py(_py: Python<'_>, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(compress_to_base64, m)?)?;
     m.add_function(wrap_pyfunction!(decompress_from_base64, m)?)?;
     Ok(())

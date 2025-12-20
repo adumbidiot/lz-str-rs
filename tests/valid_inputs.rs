@@ -20,7 +20,7 @@ fn valid_long_input_round() {
     // result = LZString144.compress(String.fromCharCode(...buffer));
     // Array.from(result).map((v) => v.charCodeAt(0));
     let data: Vec<u16> = (0u64..100_000u64)
-        .map(|val| (val % u64::from(std::u16::MAX)) as u16)
+        .map(|val| (val % u64::from(u16::MAX)) as u16)
         .collect();
 
     let compressed = lz_str::compress(&data);
