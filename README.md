@@ -1,19 +1,11 @@
 # lz-str-rs
+
 [![crates.io](https://img.shields.io/crates/v/lz-str.svg)](https://crates.io/crates/lz-str)
 [![Documentation](https://docs.rs/lz-str/badge.svg)](https://docs.rs/lz-str)
-[![MIT/Apache-2 licensed](https://img.shields.io/crates/l/lz-str.svg)](./LICENSE-APACHE)
-![Rust](https://github.com/adumbidiot/lz-str-rs/workflows/Rust/badge.svg)
+[MIT/Apache-2 licensed](https://img.shields.io/crates/l/lz-str.svg)
+![Build](https://github.com/adumbidiot/lz-str-rs/workflows/Build.yml/badge.svg)
 
-A port of [lz-string](https://github.com/pieroxy/lz-string) to Rust. 
-
-### Installing
-
-Add the following to your `Cargo.toml` file:
-
-```toml
-[dependencies]
-lz-str = "0.2.1"
-```
+A port of [lz-string](https://github.com/pieroxy/lz-string) to Rust.
 
 ## Getting Started
 
@@ -45,36 +37,40 @@ fn main() {
 See the [examples](https://github.com/adumbidiot/lz-str-rs/tree/master/examples) directory for more examples.
 
 ## Features
-`rustc-hash`: This feature will replace some internal maps' hashers with rustc-hash, 
+
+`rustc-hash`: This feature will replace some internal maps' hashers with rustc-hash,
 boosting performance at the cost of not using a DOS-resistant hasher.
 
 ## Testing
+
 ```bash
 cargo test
 ```
 
 ## Benching
+
 ```bash
 cargo bench
 ```
 
 ## Bindings
-* [WebAssembly](bindings/lz-str-wasm)
-* [Python](bindings/lz-str-py)
 
-## Authors
-adumbidiot (Nathaniel Daniel)
+- [WebAssembly](bindings/lz-str-wasm)
+- [Python](bindings/lz-str-py)
 
 ## License
+
 Licensed under either of
- * Apache License, Version 2.0
-   ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license
-   ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
+- Apache License, Version 2.0
+  ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license
+  ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
 at your option.
 
 ## Contributing
+
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
