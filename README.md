@@ -2,8 +2,8 @@
 
 [![crates.io](https://img.shields.io/crates/v/lz-str.svg)](https://crates.io/crates/lz-str)
 [![Documentation](https://docs.rs/lz-str/badge.svg)](https://docs.rs/lz-str)
-[MIT/Apache-2 licensed](https://img.shields.io/crates/l/lz-str.svg)
-![Build](https://github.com/adumbidiot/lz-str-rs/workflows/Build.yml/badge.svg)
+![MIT/Apache-2 licensed](https://img.shields.io/crates/l/lz-str.svg)
+![Build](https://github.com/adumbidiot/lz-str-rs/actions/workflows/Build.yml/badge.svg)
 
 A port of [lz-string](https://github.com/pieroxy/lz-string) to Rust.
 
