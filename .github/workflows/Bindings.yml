@@ -24,7 +24,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-wasm-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install Wasm-Pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
