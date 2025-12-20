@@ -1,6 +1,9 @@
 # Changelog
 ## [Unreleased]
 
+### Changed 
+- Updated crate edition to 2024
+
 ## [0.2.1] - 2022-10-28
 ### Added
 - Added `IntoWideIter` impl for `&String`
