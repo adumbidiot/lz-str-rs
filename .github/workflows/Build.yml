@@ -7,7 +7,7 @@ name: Build
     branches:
       - master
 jobs:
-  Lint:
+  lint:
     name: Lint
     runs-on: ubuntu-latest
     steps:
@@ -31,16 +31,18 @@ jobs:
       - name: Clippy
         run: cargo clippy --tests --examples --all -- -D warnings
 
-  Deny:
+  deny:
+    name: Deny
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
       - name: Deny
-        uses: EmbarkStudios/cargo-deny-action@v1
+        uses: EmbarkStudios/cargo-deny-action@v2
 
-  Build:
+  build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

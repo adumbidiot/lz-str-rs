@@ -8,7 +8,8 @@ name: Bindings
       - master
 
 jobs:
-  WebAssembly:
+  webAssembly:
+    name: WebAssembly
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -39,7 +40,8 @@ jobs:
         working-directory: bindings/lz-str-wasm/binding-tests
         run: npm test
 
-  Python:
+  python:
+    name: Python
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
