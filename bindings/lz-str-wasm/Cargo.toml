@@ -15,7 +15,13 @@ lz-str = { path = "../.." }
 wasm-bindgen = "0.2.106"
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = [ '-O4' ]
+wasm-opt = [
+    "-O4",
+
+    # See: https://github.com/drager/wasm-pack/issues/1501
+    "--enable-bulk-memory",
+    "--enable-nontrapping-float-to-int",
+]
 
 [features]
 rustc-hash = [
