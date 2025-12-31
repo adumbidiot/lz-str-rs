@@ -263,7 +263,9 @@ pub fn compress_to_encoded_uri_component(data: impl IntoWideIter) -> String {
         .expect("`compress_to_encoded_uri_component` output was not valid unicode`")
 }
 
-/// Compress a string into a [`String`], which is valid base64.
+/// Compress a string into a [`String`], which is base64 consistent with https://github.com/pieroxy/lz-string/
+/// @see https://github.com/pieroxy/lz-string/issues/110
+/// i.e. either naturally of length 4n, or padded with `=` to length 4n+1
 ///
 /// This function converts the result back into a Rust [`String`] since it is guaranteed to be valid unicode.
 pub fn compress_to_base64(data: impl IntoWideIter) -> String {
@@ -274,6 +276,25 @@ pub fn compress_to_base64(data: impl IntoWideIter) -> String {
 
     if mod_4 != 0 {
         for _ in mod_4..(4 + 1) {
+            compressed.push(u16::from(b'='));
+        }
+    }
+
+    String::from_utf16(&compressed).expect("`compress_to_base64` output was not valid unicode`")
+}
+
+
+/// Compress a string into a [`String`], which is valid base64.
+///
+/// This function converts the result back into a Rust [`String`] since it is guaranteed to be valid unicode.
+pub fn compress_to_base64_proper(data: impl IntoWideIter) -> String {
+    let data: Vec<u16> = data.into_wide_iter().collect();
+    let mut compressed = compress_internal(&data, 6, |n| u16::from(BASE64_KEY[usize::from(n)]));
+
+    let mod_3 = compressed.len() % 3;
+
+    if mod_3 != 0 {
+        for _ in mod_3..3 {
             compressed.push(u16::from(b'='));
         }
     }

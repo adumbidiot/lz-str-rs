@@ -47,6 +47,7 @@ mod decompress;
 pub use crate::compress::compress;
 pub use crate::compress::compress_internal;
 pub use crate::compress::compress_to_base64;
+pub use crate::compress::compress_to_base64_proper;
 pub use crate::compress::compress_to_encoded_uri_component;
 pub use crate::compress::compress_to_uint8_array;
 pub use crate::compress::compress_to_utf16;
