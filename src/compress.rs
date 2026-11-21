@@ -273,7 +273,7 @@ pub fn compress_to_base64(data: impl IntoWideIter) -> String {
     let mod_4 = compressed.len() % 4;
 
     if mod_4 != 0 {
-        for _ in mod_4..(4 + 1) {
+        for _ in mod_4..4 {
             compressed.push(u16::from(b'='));
         }
     }

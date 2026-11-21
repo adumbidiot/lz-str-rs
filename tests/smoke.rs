@@ -60,3 +60,25 @@ pub fn decompress_test() {
     let decompressed = decompress(TEST_STR_COMPRESSED).expect("Valid Decompress");
     assert_eq!(TEST_STR.encode_utf16().collect::<Vec<u16>>(), decompressed);
 }
+
+#[test]
+pub fn compress_to_base64_padding() {
+    // Expected values from lz-string 1.5.0 `compressToBase64`.
+    for (input, expected) in [
+        (" ", "ARA="),
+        ("a", "IZA="),
+        ("ab", "IYIyA==="),
+        ("abc", "IYIwxkA="),
+        ("hello", "BYUwNmD2Q==="),
+        (
+            TEST_STR,
+            "CoCwpgBAjgrglgYwNYQEYCcD2B3AdhAM0wA8IArGAWwAcBnCTANzHQgBdwIAbAQwC8AnhAAmmAOZA===",
+        ),
+    ] {
+        let compressed = lz_str::compress_to_base64(input);
+        assert_eq!(compressed, expected, "input: {input:?}");
+        assert_eq!(compressed.len() % 4, 0, "input: {input:?}");
+        let decompressed = lz_str::decompress_from_base64(&compressed).expect("valid decompress");
+        assert_eq!(input.encode_utf16().collect::<Vec<u16>>(), decompressed);
+    }
+}
